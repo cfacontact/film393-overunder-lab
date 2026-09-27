@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Over/Under Test Lab</title>
+<meta name="description" content="FILM 393 · Step-by-step designer for the over/under exposure test: build your ladder, meter it, log it, analyze it.">
+<style>
+:root{
+  --bg:#f5f2ec; --paper:#ffffff; --ink:#1d1b18; --muted:#6a655c; --line:#d8d2c6; --soft:#eeeae2;
+  --accent:#a8431d; --accent-soft:#f6e3d9; --ok:#2b7a4b; --ok-soft:#dff0e5; --bad:#b3261e; --bad-soft:#f8dedb;
+  --warn:#8a5a00; --warn-soft:#f7ecd0; --blue:#2c5a96; --blue-soft:#dde7f4;
+  --serif: "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  --sans: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono: ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#151412; --paper:#1f1d1a; --ink:#efebe3; --muted:#a59f93; --line:#3b3832; --soft:#2a2824;
+    --accent:#e57f52; --accent-soft:#3a261c; --ok:#63c28a; --ok-soft:#1d3326; --bad:#f07268; --bad-soft:#3d1f1c;
+    --warn:#e0b14a; --warn-soft:#3a2f16; --blue:#86b0e8; --blue-soft:#1c2a3d;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151412; --paper:#1f1d1a; --ink:#efebe3; --muted:#a59f93; --line:#3b3832; --soft:#2a2824;
+  --accent:#e57f52; --accent-soft:#3a261c; --ok:#63c28a; --ok-soft:#1d3326; --bad:#f07268; --bad-soft:#3d1f1c;
+  --warn:#e0b14a; --warn-soft:#3a2f16; --blue:#86b0e8; --blue-soft:#1c2a3d;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 var(--sans)}
+a{color:var(--accent)}
+.top{position:sticky;top:0;z-index:20;background:var(--paper);border-bottom:2px solid var(--ink);display:flex;align-items:center;gap:16px;padding:10px 20px}
+.top .brand{font:600 12px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase}
+.top .brand b{color:var(--accent)}
+.top .grp{margin-left:auto;font:13px var(--mono);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw}
+.top button{flex:none}
+.wrap{display:grid;grid-template-columns:250px minmax(0,1fr);max-width:1240px;margin:0 auto}
+nav.steps{position:sticky;top:50px;align-self:start;padding:20px 12px 40px 20px;max-height:calc(100vh - 50px);overflow:auto}
+nav.steps ol{list-style:none;margin:0;padding:0}
+nav.steps li button{all:unset;cursor:pointer;display:flex;gap:10px;align-items:flex-start;width:100%;padding:7px 8px;border-radius:6px;font-size:14.5px;line-height:1.3;color:var(--muted);box-sizing:border-box}
+nav.steps li button:hover{background:var(--soft);color:var(--ink)}
+nav.steps li button:focus-visible{outline:2px solid var(--accent)}
+nav.steps li.on button{background:var(--ink);color:var(--paper)}
+nav.steps .n{font:12px/1.5 var(--mono);min-width:20px}
+nav.steps .dot{margin-left:auto;width:8px;height:8px;border-radius:50%;border:1.5px solid currentColor;flex:none;margin-top:5px}
+nav.steps .dot.done{background:var(--ok);border-color:var(--ok)}
+main{padding:28px 32px 80px;min-width:0}
+.eyebrow{font:12px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+h1,h2,h3{font-family:var(--serif);font-weight:500;letter-spacing:-.01em;margin:0}
+h1{font-size:42px;line-height:1.05;margin-bottom:12px}
+h1 em,h2 em{font-style:italic}
+h2{font-size:30px;line-height:1.15;margin:34px 0 10px}
+h3{font-size:21px;margin:24px 0 8px}
+p{margin:0 0 14px;max-width:70ch}
+.lead{font-size:19px;max-width:62ch}
+.rule{border:0;border-top:1px solid var(--line);margin:26px 0}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:20px 22px;margin:16px 0}
+.card.soft{background:var(--soft)}
+.card.key{border:2px solid var(--ink)}
+.label{font:11.5px/1.3 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;display:block}
+.why{background:var(--blue-soft);border-left:4px solid var(--blue);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}
+.why .label{color:var(--blue)}
+.orig{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+.orig .label{color:var(--accent)}
+.orig .big{font:21px/1.3 var(--serif);margin:0 0 8px}
+.warn{background:var(--warn-soft);border-left:4px solid var(--warn);border-radius:0 8px 8px 0;padding:12px 16px;margin:14px 0}
+.bad{background:var(--bad-soft);border-left:4px solid var(--bad);border-radius:0 8px 8px 0;padding:12px 16px;margin:14px 0}
+.good{background:var(--ok-soft);border-left:4px solid var(--ok);border-radius:0 8px 8px 0;padding:12px 16px;margin:14px 0}
+details{margin:12px 0}
+details summary{cursor:pointer;font-weight:600;color:var(--accent)}
+details[open] summary{margin-bottom:8px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 22px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 22px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field>span{font-weight:600;font-size:15px}
+.field small,.hint{color:var(--muted);font-size:13.5px;line-height:1.4}
+input[type=text],input[type=number],select,textarea{font:16px var(--sans);color:var(--ink);background:var(--paper);border:1.5px solid var(--line);border-radius:7px;padding:9px 11px;width:100%;min-width:0}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+textarea{min-height:84px;resize:vertical}
+input.sm,select.sm{padding:6px 7px;font-size:14.5px}
+.check{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.check input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--ok);flex:none}
+.btn{font:600 15px var(--sans);border:1.5px solid var(--ink);background:var(--paper);color:var(--ink);border-radius:8px;padding:9px 16px;cursor:pointer}
+.btn:hover{background:var(--soft)}
+.btn.primary{background:var(--ink);color:var(--paper)}
+.btn.primary:hover{opacity:.88}
+.btn.ghost{border-color:var(--line)}
+.btn.small{padding:5px 10px;font-size:13.5px}
+.btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:40px;padding-top:20px;border-top:1px solid var(--line)}
+.tbl-wrap{overflow-x:auto;margin:12px 0;border:1px solid var(--line);border-radius:10px;background:var(--paper)}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font:11px/1.3 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);background:var(--soft);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.rung{font:600 15px var(--mono);white-space:nowrap}
+tr.isN td{background:var(--accent-soft)}
+tr.half td.rung{color:var(--muted)}
+.mono{font-family:var(--mono)}
+.muted{color:var(--muted)}
+.how{font-size:12.5px;color:var(--muted);line-height:1.35;margin-top:3px}
+.pill{display:inline-block;font:600 12.5px/1 var(--mono);padding:5px 8px;border-radius:99px;white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.neutral{background:var(--soft);color:var(--muted)}
+.meter{font-size:12.5px;line-height:1.35}
+.big-num{font:500 44px/1 var(--serif)}
+.stat{display:flex;flex-direction:column;gap:4px}
+.stat .label{margin:0}
+.steps-list{counter-reset:s;list-style:none;padding:0;margin:10px 0}
+.steps-list>li{counter-increment:s;display:grid;grid-template-columns:38px 1fr;gap:4px 10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.steps-list>li::before{content:counter(s,decimal-leading-zero);font:14px/1.6 var(--mono);color:var(--muted)}
+.quiz-item{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.quiz-fb{grid-column:1/-1;font-size:14px;padding:8px 12px;border-radius:6px}
+.quiz-fb.right{background:var(--ok-soft)}
+.quiz-fb.wrong{background:var(--bad-soft)}
+.roles{display:grid;gap:10px}
+.role-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) 40px;gap:8px;align-items:center}
+.ruler{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:6px;margin:10px 0}
+.ruler button{all:unset;cursor:pointer;height:52px;border:1.5px solid var(--ink);border-radius:4px;background:var(--paper);box-sizing:border-box}
+.ruler button.on{background:repeating-linear-gradient(45deg,var(--ink) 0 2px,transparent 2px 7px)}
+.ruler button.isN{border-width:3px}
+.ruler button:focus-visible{outline:3px solid var(--accent)}
+.ruler-l{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:6px;text-align:center;font:12px var(--mono)}
+.map{position:relative;border-radius:10px;overflow:hidden;background:#000;user-select:none;margin:12px 0}
+.map img{display:block;width:100%;height:auto}
+.map.adding{cursor:crosshair;outline:3px solid var(--accent)}
+.mk{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:0;pointer-events:none}
+.mk .dotn{width:22px;height:22px;border-radius:50%;background:#fff;color:#000;font:700 12px/22px var(--mono);text-align:center;border:2px solid #000;flex:none}
+.mk .tag{margin-left:5px;background:rgba(0,0,0,.78);color:#fff;font:600 12.5px/1.2 var(--mono);padding:4px 7px;border-radius:5px;white-space:nowrap;border:2px solid transparent}
+.mk .tag.hot{border-color:#ff6b57}
+.mk .tag.cold{border-color:#6aa6ff}
+.mk .tag.good{border-color:#5fd18c}
+.heat td{text-align:center;font:12.5px var(--mono);white-space:nowrap;padding:6px 5px}
+.heat td.lbl{text-align:left;font:600 13px var(--sans)}
+.z-hot{background:var(--bad-soft);color:var(--bad)}
+.z-cold{background:var(--blue-soft);color:var(--blue)}
+.z-good{background:var(--ok-soft);color:var(--ok)}
+.z-n{background:transparent}
+.rungbar{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0}
+.rungbar button{all:unset;cursor:pointer;font:600 12.5px var(--mono);padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
+.rungbar button.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 4px}
+.tabs button{all:unset;cursor:pointer;padding:7px 12px;border:1.5px solid var(--line);border-radius:99px;font-weight:600;font-size:14px}
+.tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.slate{font:600 13px var(--mono);white-space:nowrap}
+.lint{font-size:13px;margin-top:4px}
+.save-note{font:12px var(--mono);color:var(--muted)}
+.hide{display:none!important}
+@media (max-width:900px){
+  .wrap{grid-template-columns:1fr}
+  nav.steps{position:static;max-height:none;padding:10px 16px 0;overflow-x:auto}
+  nav.steps ol{display:flex;gap:6px;width:max-content}
+  nav.steps li button{padding:7px 10px;border:1px solid var(--line);white-space:nowrap;width:auto}
+  nav.steps .t{display:none}
+  nav.steps .dot{margin:5px 0 0 0}
+  main{padding:20px 16px 60px}
+  .grid2,.grid3{grid-template-columns:1fr}
+  h1{font-size:34px}
+  h2{font-size:25px}
+  .quiz-item{grid-template-columns:1fr}
+  .top .grp{display:none}
+}
+@media print{
+  .top,nav.steps,.pager,.noprint,button.btn{display:none!important}
+  .wrap{display:block}
+  main{padding:0}
+  body{background:#fff;color:#000;font-size:12px}
+  .card,.orig,.why{break-inside:avoid;border-color:#999}
+  .tbl-wrap{overflow:visible;border-color:#999}
+  table{font-size:11px}
+  h2{font-size:20px;margin-top:18px;break-after:avoid}
+  .pagebreak{break-before:page}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">FILM 393 · <b>Over/Under</b> Test Lab</div>
+  <div class="grp" id="grpLabel"></div>
+  <button class="btn small ghost noprint" data-act="theme" aria-label="Toggle light/dark">◐</button>
+</header>
+<div class="wrap">
+  <nav class="steps" aria-label="Steps"><ol id="nav"></ol></nav>
+  <main id="main" tabindex="-1"></main>
+</div>
+<input type="file" id="fileImport" accept="application/json,.json" class="hide">
+<input type="file" id="fileImg" accept="image/*" class="hide">
+<script>
+"use strict";
+/* ============================================================
+   STOP MATH
+   Iris position is stored as "s" = stops from T1 (T1=0, T1.4=1, T2=2, T2.8=3 …).
+   Bigger s = smaller opening = less light.
+   Exposure time t = shutter angle / 360 / fps.
+   Offset of a rung from N = log2(t/t0) + (doubles at N − doubles now) + (sN − s).
+   ============================================================ */
+const RUNGS=[5,4,3,2,1.5,1,0.5,0,-0.5,-1,-1.5,-2,-3,-4,-5];
+const FULL=[1,1.4,2,2.8,4,5.6,8,11,16,22,32,45,64];
+const THIRDS=[1,1.1,1.2,1.4,1.6,1.8,2,2.2,2.5,2.8,3.2,3.5,4,4.5,5,5.6,6.3,7.1,8,9,10,11,13,14,16,18,20,22,25,29,32];
+const EIS=[100,125,160,200,250,320,400,500,640,800,1000,1280,1600,2000,2500,3200,4000,5000,6400,8000,10000,12800];
+const EPS=1e-6;
+const log2=Math.log2;
+
+function tToS(T){
+  T=Number(T); if(!(T>0)) return null;
+  for(let i=0;i<FULL.length;i++) if(Math.abs(FULL[i]-T)/T<0.04) return i;
+  for(let i=0;i<THIRDS.length;i++) if(Math.abs(THIRDS[i]-T)/T<0.025) return i/3;
+  return 2*log2(T);
+}
+function fracGlyph(f){
+  if(Math.abs(f)<0.08) return '';
+  if(Math.abs(f-1/6)<0.05) return '⅙';
+  if(Math.abs(f-5/6)<0.05) return '⅚';
+  if(Math.abs(f-1/3)<0.09) return '⅓';
+  if(Math.abs(f-0.5)<0.08) return '½';
+  if(Math.abs(f-2/3)<0.09) return '⅔';
+  return '.'+Math.round(f*10);
+}
+/* T-number label for an iris position, e.g. s=3 → "T2.8", s=3.333 → "T2.8 +⅓" */
+function fmtT(s){
+  if(s==null||isNaN(s)) return '—';
+  const half=Math.abs(s*2-Math.round(s*2))<EPS && Math.abs(s-Math.round(s))>EPS;
+  let base=Math.floor(s+EPS), frac=s-base;
+  if(!half){ const r3=Math.round(s*3)/3; base=Math.floor(r3+EPS); frac=r3-base; if(frac>0.95){base++;frac=0;} }
+  const name=base>=0&&base<FULL.length?FULL[base]:(Math.round(Math.pow(2,base/2)*10)/10);
+  const g=fracGlyph(frac);
+  return 'T'+name+(g?' +'+g:'');
+}
+/* Iris label relative to N — half stops shown as a split between two marks */
+function irisLabel(s,sN){
+  const d=s-sN;
+  if(Math.abs(d)<EPS) return fmtT(s);
+  if(Math.abs(Math.abs(d)-Math.round(Math.abs(d)))<EPS) return fmtT(s);
+  const lo=sN+Math.trunc(d), hi=lo+Math.sign(d);
+  const a=[fmtT(Math.min(lo,hi)),fmtT(Math.max(lo,hi))];
+  return a[0]+' / '+a[1].replace('T','')+' split';
+}
+/* Stops as signed text: 1.5 → "+1½" */
+function fmtStops(x,withSign=true){
+  const sign=x>EPS?'+':(x<-EPS?'−':'');
+  let a=Math.abs(x), w=Math.floor(a+EPS), f=a-w;
+  let g=fracGlyph(f); if(Math.abs(f-1)<0.08){w++;g='';}
+  let body=(w||!g?String(w):'')+g;
+  if(body==='0') return '0';
+  return (withSign?sign:'')+body;
+}
+/* Offset label: 0 → "N", 1.5 → "N+1½", -2 → "N−2" */
+function fmtO(o){
+  if(o==null||isNaN(o)) return '—';
+  if(Math.abs(o)<0.08) return 'N';
+  return 'N'+fmtStops(o);
+}
+function fmtAng(a){ return (Math.abs(a-Math.round(a))<0.01?Math.round(a):Math.round(a*100)/100)+'°'; }
+function fmtFps(F){ return String(Math.round(F*1000)/1000); }
+function fmtDen(den){ return '1/'+(den<10?Math.round(den*10)/10:Math.round(den)); }
+const STD_DEN=[1,2,3,4,6,8,12,15,24,25,30,40,48,50,60,80,96,100,120,125,160,200,250,320,400,500,640,800,1000,1250,1600,2000,2500,3200,4000,5000,6400,8000,10000,12800,16000];
+function nearDen(den){ let b=STD_DEN[0]; for(const d of STD_DEN) if(Math.abs(log2(d/den))<Math.abs(log2(b/den))) b=d; return b; }
+
+/* Parse a meter reading: "2.8", "T4", "2.8 2/3", "2.8+1/3", "2.8 7" (Sekonic tenths), "5.6½" */
+function parseReading(str){
+  if(str==null) return null;
+  let t=String(str).trim().toLowerCase().replace(/^[tf]\s*\/?\s*/,'')
+    .replace('⅓',' 1/3').replace('⅔',' 2/3').replace('½',' 1/2').replace(/\s+/g,' ').trim();
+  if(!t) return null;
+  let m=t.match(/^(\d+(?:\.\d+)?)\s*(?:\+\s*)?(?:(\d)\s*\/\s*(\d))?$/);
+  let base,frac=0;
+  if(m){ base=parseFloat(m[1]); if(m[2]) frac=Number(m[2])/Number(m[3]); }
+  else{
+    m=t.match(/^(\d+(?:\.\d+)?)(?:\s*\+\s*|\s+)\.?(\d)$/);
+    if(!m) return null;
+    base=parseFloat(m[1]); frac=Number(m[2])/10;
+  }
+  const s=tToS(base); if(s==null) return null;
+  return s+frac;
+}
+function snapEI(v){ let best=EIS[0]; for(const e of EIS) if(Math.abs(log2(e/v))<Math.abs(log2(best/v))) best=e; return best; }
+const rk=o=>'r'+Math.round(o*2);
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const KEY='film393-overunder-lab-v1';
+function fresh(){
+  return {
+    step:0,
+    group:{name:'',section:'',date:'',members:[{name:'',role:''},{name:'',role:''},{name:'',role:''}]},
+    quiz:{}, apparatus:{},
+    cam:{name:'',ei:800,profiles:'',shutterMode:'angle',minA:11.25,maxA:360,fastest:8000,anyAngle:'no',
+         fps:24,minF:6,maxF:60,lens:'',focal:'',wide:'1.5',deep:'22',wb:3200,doubles:4,playSec:10,headroom:3},
+    N:null,
+    base:{auto:true,A0:180,D0:0},
+    edits:{},
+    setup:{key:'',fill:'',bg:'',hair:'',dist:'',fixture:'',notes:''},
+    checklist:{},
+    map:{img:null,markers:[],rung:0,clip:'',floor:''},
+    takes:{}, analysis:{}, profileCmp:{},
+    rules:[], customRules:'',
+    ui:{profile:0,adding:false}
+  };
+}
+let S;
+function load(){
+  try{ const raw=localStorage.getItem(KEY); if(raw){ S=merge(fresh(),JSON.parse(raw)); return; } }catch(e){}
+  S=fresh();
+}
+function merge(a,b){
+  if(b&&typeof b==='object'&&!Array.isArray(b)){ for(const k in b){ a[k]=(a[k]&&typeof a[k]==='object'&&!Array.isArray(a[k]))?merge(a[k],b[k]):b[k]; } }
+  return a;
+}
+let saveWarned=false;
+function save(){
+  try{ localStorage.setItem(KEY,JSON.stringify(S)); saveWarned=false; }
+  catch(e){ if(!saveWarned){ saveWarned=true; alert('Autosave failed (browser storage is full or blocked — often the photo is too big). Use "Export group file" on the last step to keep your work.'); } }
+}
+function getP(path){ return path.split('.').reduce((o,k)=>o==null?undefined:o[k],S); }
+function setP(path,val){
+  const ks=path.split('.'); let o=S;
+  for(let i=0;i<ks.length-1;i++){ if(o[ks[i]]==null||typeof o[ks[i]]!=='object') o[ks[i]]=/^\d+$/.test(ks[i+1])?[]:{}; o=o[ks[i]]; }
+  o[ks[ks.length-1]]=val;
+}
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function profiles(){ const p=String(S.cam.profiles||'').split(',').map(x=>x.trim()).filter(Boolean); return p.length?p:['Profile 1']; }
+function curProf(){ const n=profiles().length; if(S.ui.profile>=n) S.ui.profile=0; return S.ui.profile; }
+
+/* ============================================================
+   CAMERA PARAMS + LADDER SOLVER
+   ============================================================ */
+function P(){
+  const c=S.cam, F0=Number(c.fps)||24;
+  const speed=c.shutterMode==='speed';
+  const sWide=tToS(c.wide)??0, sDeep=tToS(c.deep)??9;
+  return {
+    speed, F0,
+    minA: speed? 360*F0/(Number(c.fastest)||8000) : (Number(c.minA)||11.25),
+    maxA: speed? 360 : (Number(c.maxA)||360),
+    minF: Math.min(Number(c.minF)||F0,F0), maxF: Math.max(Number(c.maxF)||F0,F0),
+    Dmax: Math.max(0,Math.round(Number(c.doubles)||0)),
+    sWide:Math.min(sWide,sDeep), sDeep:Math.max(sWide,sDeep),
+    sN: S.N==null? null : Number(S.N),
+    halfMode: (!speed && c.anyAngle==='yes')?'shutter':'iris',
+    playSec:Number(c.playSec)||10,
+    fastest: speed? (Number(c.fastest)||8000) : Infinity,
+    headroom: c.headroom===''||c.headroom==null?3:Number(c.headroom)
+  };
+}
+function solveRung(o,A0,D0,p){
+  let s=p.sN,k=0,F=p.F0,D=D0,ok=true;
+  const aOK=(kk,FF=F)=>{const a=A0*Math.pow(2,kk); return a>=p.minA-EPS && a<=p.maxA+EPS && a/360/FF>=1/p.fastest-1e-12;};
+  const whole=Math.trunc(o), half=o-whole;
+  if(Math.abs(half)>EPS){
+    const h=Math.sign(half)*0.5; let done=false;
+    const irisOK=()=>s-h>=p.sWide-EPS && s-h<=p.sDeep+EPS;
+    if(p.halfMode==='shutter'&&aOK(k+h)){k+=h;done=true;}
+    if(!done&&irisOK()){s-=h;done=true;}
+    if(!done&&aOK(k+h)){k+=h;done=true;}
+    if(!done) ok=false;
+  }
+  let r=whole;
+  while(r>0&&aOK(k+1)){k++;r--;}
+  while(r>0&&D>0){D--;r--;}
+  while(r>0&&F/2>=p.minF-EPS){F/=2;r--;}
+  while(r>0&&s-1>=p.sWide-EPS){s-=1;r--;}
+  while(r<0&&aOK(k-1)){k--;r++;}
+  while(r<0&&D<p.Dmax){D++;r++;}
+  while(r<0&&F*2<=p.maxF+EPS&&aOK(k,F*2)){F*=2;r++;}
+  while(r<0&&s+1<=p.sDeep+EPS){s+=1;r++;}
+  if(r!==0) ok=false;
+  return {o,s,angle:A0*Math.pow(2,k),F,D,ok};
+}
+function ladderCost(A0,D0,p){
+  let cost=0; const rows=RUNGS.map(o=>solveRung(o,A0,D0,p));
+  for(const r of rows){
+    if(!r.ok) cost+=1000;
+    cost+=3*Math.abs(log2(r.F/p.F0));
+    const dI=Math.abs(r.s-p.sN); cost+=4*Math.floor(dI+EPS);
+    cost+=0.5*Math.abs(r.D-D0);
+  }
+  const light=log2(180/A0)+D0;
+  cost+=1.0*Math.max(0,light)+0.3*Math.abs(log2(A0/180));
+  return {cost,rows};
+}
+function baseCandidates(p){ return [360,180,90,45,22.5,11.25,5.625].filter(a=>a>=p.minA-EPS&&a<=p.maxA+EPS); }
+function autoBase(p){
+  let best=null;
+  const cands=[];
+  for(const A0 of baseCandidates(p)) for(let D0=0;D0<=p.Dmax;D0++) cands.push({A0,D0,light:log2(180/A0)+D0});
+  let pool=cands.filter(c=>c.light<=p.headroom+EPS);
+  if(!pool.length){ const m=Math.min(...cands.map(c=>c.light)); pool=cands.filter(c=>c.light<=m+EPS); }
+  for(const {A0,D0} of pool){
+    const c=ladderCost(A0,D0,p);
+    if(!best||c.cost<best.cost-1e-9) best={A0,D0,cost:c.cost};
+  }
+  return best||{A0:180,D0:0,cost:0};
+}
+function getBase(p){
+  if(S.base.auto){ const b=autoBase(p); return {A0:b.A0,D0:b.D0}; }
+  return {A0:Number(S.base.A0)||180,D0:Math.min(p.Dmax,Number(S.base.D0)||0)};
+}
+/* Final ladder = solver suggestion + any cell the group edited by hand */
+function ladder(){
+  const p=P(); if(p.sN==null) return null;
+  const b=getBase(p);
+  const rows=RUNGS.map(o=>{
+    const r=solveRung(o,b.A0,b.D0,p); const e=S.edits[rk(o)]||{};
+    const row={o,s:r.s,angle:r.angle,F:r.F,D:r.D,ok:r.ok,edited:false};
+    if(e.s!=null&&e.s!==''){row.s=Number(e.s);row.edited=true;}
+    if(e.F!=null&&e.F!==''){row.F=Number(e.F);row.edited=true;}
+    if(e.D!=null&&e.D!==''){row.D=Number(e.D);row.edited=true;}
+    if(p.speed){
+      row.den=360*r.F/r.angle;
+      if(e.den!=null&&e.den!==''){row.den=Number(e.den);row.edited=true;}
+      row.t=1/row.den; row.angle=360*row.F*row.t;
+    }else{
+      if(e.angle!=null&&e.angle!==''){row.angle=Number(e.angle);row.edited=true;}
+      row.t=row.angle/360/row.F;
+    }
+    return row;
+  });
+  const t0=b.A0/360/p.F0;
+  for(const r of rows){
+    r.actual=log2(r.t/t0)+(b.D0-r.D)+(p.sN-r.s);
+    r.meterRec=p.sN+log2(r.t/t0)+(b.D0-r.D);
+    r.incident=p.sN+(b.D0-r.D);
+    r.rec=Math.round(p.playSec*p.F0/r.F);
+    r.problems=[];
+    if(r.t>1/r.F+1e-9) r.problems.push('Exposure longer than one frame — shutter can’t exceed 360° ('+fmtDen(r.F)+' at '+fmtFps(r.F)+' fps).');
+    if(!p.speed&&(r.angle<p.minA-EPS||r.angle>p.maxA+EPS)) r.problems.push('Your camera’s shutter range is '+fmtAng(p.minA)+'–'+fmtAng(p.maxA)+'.');
+    if(p.speed&&r.den>p.fastest*1.02) r.problems.push('Faster than your camera’s fastest shutter (1/'+p.fastest+').');
+    if(r.F<p.minF-EPS||r.F>p.maxF+EPS) r.problems.push('Outside your camera’s frame-rate range ('+fmtFps(p.minF)+'–'+fmtFps(p.maxF)+').');
+    if(r.s<p.sWide-EPS||r.s>p.sDeep+EPS) r.problems.push('Iris outside your lens range.');
+    if(r.D>p.Dmax||r.D<0) r.problems.push('You only listed '+p.Dmax+' double(s).');
+    if(!r.edited&&!r.ok) r.problems.push('Your settings can’t reach this rung. Widen a range on the camera step, or add scrims.');
+    r.match=Math.abs(r.actual-r.o)<0.09;
+    r.how=howText(r,b,p);
+    r.slate=[fmtO(r.o),irisLabel(r.s,p.sN).replace(' split',''),p.speed?fmtDen(r.den):fmtAng(r.angle),fmtFps(r.F)+'fps',r.D?r.D+' dbl':'no scrim'].join(' · ');
+  }
+  return {rows,base:b,p,t0};
+}
+function howText(r,b,p){
+  const parts=[];
+  if(p.speed){ const d0=360*p.F0/b.A0; if(Math.abs(log2(r.den/d0))>0.02) parts.push('shutter '+fmtDen(d0)+'→'+fmtDen(r.den)+' ('+fmtStops(log2(d0/r.den))+')'); }
+  else if(Math.abs(r.angle-b.A0)>0.01) parts.push('shutter '+fmtAng(b.A0)+'→'+fmtAng(r.angle)+' ('+fmtStops(log2(r.angle/b.A0))+')');
+  if(Math.abs(r.F-p.F0)>EPS) parts.push(fmtFps(p.F0)+'→'+fmtFps(r.F)+' fps'+(p.speed?(r.F<p.F0?' (lets the shutter stay open longer)':' (lets the shutter go faster)'):' ('+fmtStops(log2(p.F0/r.F))+')'));
+  const dD=b.D0-r.D;
+  if(dD>0) parts.push('pull '+dD+' double'+(dD>1?'s':'')+' (+'+dD+')');
+  if(dD<0) parts.push('add '+(-dD)+' double'+(dD<-1?'s':'')+' (−'+(-dD)+')');
+  const dI=p.sN-r.s;
+  if(Math.abs(dI)>EPS) parts.push('iris '+(dI>0?'open ':'close ')+fmtStops(Math.abs(dI),false)+' ('+fmtStops(dI)+')');
+  return parts.length?parts.join(' · '):'base settings — this is N';
+}
+
+/* ============================================================
+   STEPS
+   ============================================================ */
+const STEPS=[
+  {t:'Your group',f:stepGroup,done:()=>!!S.group.name&&S.group.members.some(m=>m.name)},
+  {t:'Think like a scientist',f:stepExperiment,done:()=>Object.keys(QUIZ).every(k=>S.quiz[k]===QUIZ[k].a)},
+  {t:'Camera, lens & light',f:stepCamera,done:()=>!!S.cam.name&&!!S.cam.ei&&!!S.cam.profiles},
+  {t:'Choose N',f:stepN,done:()=>S.N!=null},
+  {t:'Build the ladder',f:stepLadder,done:()=>{const L=ladder();return !!L&&L.rows.every(r=>r.match&&!r.problems.length);}},
+  {t:'Meter & light to N',f:stepMeter,done:()=>!!S.setup.key},
+  {t:'Map your frame',f:stepMap,done:()=>S.map.markers.some(m=>parseReading(m.reading)!=null)},
+  {t:'Shoot the ladder',f:stepShoot,done:()=>profiles().some((_,i)=>RUNGS.every(o=>S.takes['p'+i]?.[rk(o)]?.shot))},
+  {t:'One-light review',f:stepOneLight,done:()=>profiles().some((_,i)=>S.analysis['p'+i]?.hi)},
+  {t:'Best-light review',f:stepBestLight,done:()=>profiles().some((_,i)=>S.analysis['p'+i]?.overRec)},
+  {t:'Compare profiles & EI',f:stepProfiles,done:()=>Object.values(S.profileCmp||{}).some(v=>v&&v.verdict)},
+  {t:'Write on-set rules',f:stepRules,done:()=>(S.rules||[]).filter(Boolean).length>=3},
+  {t:'Packet & export',f:stepPacket,done:()=>false},
+];
+
+/* ---------- helpers for markup ---------- */
+function inp(path,{type='text',ph='',cls='',r=false,attrs=''}={}){
+  const v=getP(path);
+  return `<input type="${type}" ${type==='number'?'step="any" inputmode="decimal"':''} class="${cls}" data-bind="${path}" ${type==='number'?'data-num="1"':''} ${r?'data-r="1"':''} value="${esc(v??'')}" placeholder="${esc(ph)}" ${attrs}>`;
+}
+function sel(path,opts,{r=true,cls='',num=false}={}){
+  const v=getP(path);
+  return `<select class="${cls}" data-bind="${path}" ${r?'data-r="1"':''} ${num?'data-num="1"':''}>${opts.map(o=>{const [val,lab]=Array.isArray(o)?o:[o,o];return `<option value="${esc(val)}" ${String(v??'')===String(val)?'selected':''}>${esc(lab)}</option>`;}).join('')}</select>`;
+}
+function field(label,control,hint=''){ return `<label class="field"><span>${label}</span>${control}${hint?`<small>${hint}</small>`:''}</label>`; }
+function chk(path,text){ return `<label class="check"><input type="checkbox" data-bind="${path}" data-r="1" ${getP(path)?'checked':''}><span>${text}</span></label>`; }
+function why(title,body){ return `<div class="why"><span class="label">${title}</span>${body}</div>`; }
+function orig(body){ return `<div class="orig"><span class="label">From the original F3 test</span>${body}</div>`; }
+function head(n,title,lead){ return `<p class="eyebrow">Step ${String(n).padStart(2,'0')} of ${STEPS.length-1} · ${esc(STEPS[n].t)}</p><h1>${title}</h1>${lead?`<p class="lead">${lead}</p>`:''}`; }
+function profTabs(){
+  const ps=profiles(), c=curProf();
+  if(ps.length<2) return `<p class="hint">Profile: <b>${esc(ps[0])}</b></p>`;
+  return `<div class="tabs" role="tablist">${ps.map((p,i)=>`<button role="tab" aria-selected="${i===c}" class="${i===c?'on':''}" data-act="prof" data-arg="${i}">${esc(p)}</button>`).join('')}</div><p class="hint">You shoot the same ladder once per profile. Fill this page in for each tab.</p>`;
+}
+function rungOpts(sign,none='— not yet —'){
+  const list=RUNGS.filter(o=>sign>0?o>0:sign<0?o<0:true);
+  return [['',none],...list.map(o=>[String(o),fmtO(o)]),['none',sign>0?'Held all the way to N+5':sign<0?'Held all the way to N−5':'n/a']];
+}
+function needN(){ return `<div class="warn">Pick your camera settings and <b>N</b> first. <button class="btn small" data-act="go" data-arg="3">Go to Choose N</button></div>`; }
+
+/* ---------- STEP 0 · GROUP ---------- */
+const ROLES=['DP — calls N, judges the monitor','1st AC — sets iris / shutter / fps each rung','Gaffer — only person who touches the light & scrims','Meter & log — meters, fills the take log','2nd AC — slates every take, calls roll time'];
+const COMBOS={3:['DP + Meter & log','1st AC + 2nd AC (slate)','Gaffer'],4:['DP','1st AC + 2nd AC (slate)','Gaffer','Meter & log'],5:['DP','1st AC','Gaffer','Meter & log','2nd AC (slate)']};
+function stepGroup(){
+  const m=S.group.members, n=m.length;
+  return head(0,'Design your <em>over/under</em> test.','This lab walks your group through the Camera Testing Handbook one decision at a time. You type in your camera, lens and shooting stop; it builds the exposure ladder, tells you how to meter every rung, and turns your results into on-set rules.')+
+  `<div class="card key"><span class="label">How this works</span>
+   <ol class="steps-list">
+     <li><div><b>Set up (steps 1–4).</b> Tell the lab your camera and lens and choose N. It does the stop math and hands you a ladder you can check line by line.</div></li>
+     <li><div><b>On the floor (steps 5–7).</b> Meter to N, map your frame with spot readings, then shoot and log every rung.</div></li>
+     <li><div><b>Review (steps 8–12).</b> One-light, best-light, compare profiles, then write rules your gaffer and 1st AC can hold you to. Print it as your packet.</div></li>
+   </ol>
+   <p class="hint" style="margin:0">Your work saves automatically <b>in this browser on this computer</b>. To move it to a teammate’s laptop, use <b>Export group file</b> on the last step and have them import it.</p></div>
+   <h2>Who’s in the group?</h2>
+   <div class="grid3">${field('Group name',inp('group.name',{ph:'e.g. Group 3 — FX6',r:true}))}${field('Section',inp('group.section',{ph:'FILM 393-01'}))}${field('Test date',inp('group.date',{ph:'Tue 9/29'}))}</div>
+   <h3>Members & roles</h3>
+   <div class="roles">${m.map((x,i)=>`<div class="role-row">${inp(`group.members.${i}.name`,{ph:'Name'})}${sel(`group.members.${i}.role`,[['','Pick a role…'],...ROLES.map(r=>[r,r]),...((COMBOS[n]||[]).filter(c=>c.includes('+')).map(c=>[c,c]))],{r:false})}<button class="btn small ghost" data-act="rmMember" data-arg="${i}" aria-label="Remove member">✕</button></div>`).join('')}</div>
+   <div class="row" style="margin-top:10px">${n<5?'<button class="btn small" data-act="addMember">+ Add member</button>':''}<span class="hint">Groups of 3–5.</span></div>
+   ${why('Why roles matter on test day',`<p>Fifteen takes per profile go fast, and a ladder is ruined by one wrong setting nobody noticed. Give every job to one person. With ${n} people we suggest: <b>${(COMBOS[Math.min(5,Math.max(3,n))]||[]).join(' · ')}</b>.</p><p style="margin:0"><b>Call and response, every take:</b> Log reads the row out loud → 1st AC sets it and reads it back → Gaffer confirms the scrims → 2nd AC writes the slate → DP checks the waveform → roll.</p>`)}`;
+}
+
+/* ---------- STEP 1 · EXPERIMENT ---------- */
+const QUIZ={
+  wb:{q:'White balance',a:'c',why:'Controlled. Set it once to your tungsten Kelvin and never touch it.'},
+  off:{q:'Exposure offset from N (N+2, N−1…)',a:'i',why:'Independent. It’s the one thing you change on purpose.'},
+  skin:{q:'Skin detail and warmth',a:'d',why:'Dependent. You watch it change.'},
+  fix:{q:'Where the tungsten head sits (position, flood/spot)',a:'c',why:'Controlled. Moving the light changes the contrast of the scene, not just its brightness, so you could no longer tell what caused what.'},
+  scrim:{q:'Scrims you add or pull during the ladder',a:'i',why:'Independent. A scrim is one of your tools for changing the exposure offset. It lowers intensity without changing where the light comes from or its color. (The fixture itself stays locked.)'},
+  dim:{q:'A dimmer on the tungsten head',a:'c',why:'Controlled, and don’t touch it. Dimming tungsten makes it warmer, which adds a second variable (color). That’s why you use scrims.'},
+  clip:{q:'Where highlights clip',a:'d',why:'Dependent. It’s one of the results you’re measuring.'},
+  ei:{q:'EI on the camera',a:'c',why:'Controlled for the whole ladder. You might re-rate afterward, and then you shoot a new ladder.'},
+  shut:{q:'Shutter angle / frame rate used to hit each rung',a:'i',why:'Independent. Like scrims, they’re tools for setting the offset.'},
+  noise:{q:'Shadow noise',a:'d',why:'Dependent.'},
+  prof:{q:'Recording profile within one ladder',a:'c',why:'Controlled inside a ladder. Across ladders it becomes the thing you compare (step 10).'},
+};
+const APPARATUS=['Camera + one wide-ish cinema prime near your master focal length','Tungsten key with its scrim bag (doubles + singles), bounced into bead board','One small tungsten background-separation source','Sekonic Speedmaster: incident dome + 1° spot','18% grey card + color chart','Calibrated monitor with a waveform','Stand-in whose skin matches your leads, in the hero costume','Key fabrics in frame as texture references','Slate + markers big enough to read in a thumbnail','Tape measure + camera tape for marks'];
+function stepExperiment(){
+  const opts=[['','Choose…'],['c','Controlled — locked'],['i','Independent — what you sweep'],['d','Dependent — what you watch']];
+  const answered=Object.keys(QUIZ).filter(k=>S.quiz[k]).length, right=Object.keys(QUIZ).filter(k=>S.quiz[k]===QUIZ[k].a).length;
+  return head(1,'This is an <em>experiment.</em>','Change one thing, hold everything else still, and watch what happens. If two things change at once, you can’t tell which one caused what you see.')+
+  `<div class="grid3">
+    <div class="card soft"><span class="label">Controlled · locked</span>White balance, focal length, the fixture’s position, subject, EI, profile. If it isn’t the independent variable, it doesn’t move.</div>
+    <div class="card key"><span class="label">Independent · the one thing</span>The <b>exposure offset from N</b>, swept from N+5 down to N−5 in exact steps.</div>
+    <div class="card soft"><span class="label">Dependent · what you watch</span>Skin detail, fabric texture, highlight clip, shadow noise, color fidelity.</div>
+  </div>
+  <h2>Quick check: sort these</h2>
+  <p>Put each item in its category. You get an explanation as soon as you answer. <span class="pill ${right===Object.keys(QUIZ).length?'ok':'neutral'}">${right}/${Object.keys(QUIZ).length} right</span></p>
+  <div class="card">${Object.entries(QUIZ).map(([k,v])=>{const a=S.quiz[k];return `<div class="quiz-item"><div>${esc(v.q)}</div>${sel('quiz.'+k,opts)}${a?`<div class="quiz-fb ${a===v.a?'right':'wrong'}">${a===v.a?'✓ ':'✗ Not quite. '}${esc(v.why)}</div>`:''}</div>`;}).join('')}</div>
+  ${answered===Object.keys(QUIZ).length&&right<answered?'<div class="warn">Fix the ✗ items before test day. They’re the mistakes that ruin a ladder.</div>':''}
+  <h2>Apparatus</h2>
+  <div class="card">${APPARATUS.map((a,i)=>chk('apparatus.a'+i,esc(a))).join('')}</div>
+  ${why('The golden rule',`<p style="margin:0">If a variable you meant to hold still moved during the test (a cloud, a dimmer, an auto setting, someone bumping the stand), the ladder is contaminated. <b>Stop, relock, reshoot.</b></p>`)}`;
+}
+
+/* ---------- STEP 2 · CAMERA ---------- */
+function stepCamera(){
+  const c=S.cam, speed=c.shutterMode==='speed';
+  return head(2,'Your camera, <em>your</em> lens.','Every camera is different, so enter what your camera actually allows. Check its menus while you fill this in. The lab uses these limits to build a ladder your camera can shoot.')+
+  `<h2>Camera</h2>
+  <div class="grid2">
+    ${field('Camera',inp('cam.name',{ph:'e.g. Sony FX6',r:true}))}
+    ${field('EI you’ll test at',inp('cam.ei',{type:'number',ph:'800',r:true}),'Start at the camera’s <b>native / base ISO</b>. The test tells you whether to re-rate.')}
+    ${field('Profiles to test',inp('cam.profiles',{ph:'e.g. S-Log3, S-Cinetone, Rec709',r:true}),'Separate with commas. You shoot one full ladder per profile.')}
+    ${field('White balance (K)',inp('cam.wb',{type:'number',ph:'3200'}),'Tungsten key, so usually 3200K. Lock it; no auto.')}
+  </div>
+  <h2>Shutter & frame rate</h2>
+  <div class="grid2">
+    ${field('How does your camera show shutter?',sel('cam.shutterMode',[['angle','Degrees (180°)'],['speed','Speed (1/48)']]),'Look in the shutter menu. Many cameras let you switch; degrees is easier for this test.')}
+    ${speed?field('Fastest shutter speed',`<div class="row" style="flex-wrap:nowrap"><span class="mono">1/</span>${inp('cam.fastest',{type:'number',ph:'8000',r:true})}</div>`,'The slowest speed is always one frame long (1/fps).')
+      :field('Can you dial <em>any</em> angle (e.g. 63.6°)?',sel('cam.anyAngle',[['no','No / not sure — preset list'],['yes','Yes — any value']]),'If yes, half-stops can come from the shutter so the iris never moves. If no, half-stops split the iris between two marks.')}
+    ${speed?'':field('Narrowest shutter angle',inp('cam.minA',{type:'number',ph:'11.25',r:true}),'Smallest angle in the menu, e.g. 11.25°.')}
+    ${speed?'':field('Widest shutter angle',inp('cam.maxA',{type:'number',ph:'360',r:true}),'Usually 360°. Some cameras stop at 358°.')}
+    ${field('Base frame rate (fps)',sel('cam.fps',[['24','24'],['23.976','23.976'],['25','25'],['30','30']],{num:true}),'The rate you shoot N at.')}
+    ${field('Lowest sensor frame rate',inp('cam.minF',{type:'number',ph:'6',r:true}),'Slow-motion / “S&Q” / off-speed menu. It must be the <b>sensor</b> rate, not the playback timebase.')}
+    ${field('Highest sensor frame rate',inp('cam.maxF',{type:'number',ph:'60',r:true}))}
+  </div>
+  <h2>Lens</h2>
+  <div class="grid3">
+    ${field('Lens',inp('cam.lens',{ph:'e.g. Cooke S4 32mm'}))}
+    ${field('Widest T-stop',inp('cam.wide',{type:'number',ph:'1.5',r:true}),'The lowest number on the barrel.')}
+    ${field('Deepest T-stop',inp('cam.deep',{type:'number',ph:'22',r:true}))}
+  </div>
+  <h2>Light</h2>
+  <div class="grid2">
+    ${field('Doubles in the scrim bag',inp('cam.doubles',{type:'number',ph:'4',r:true}),'How many <b>doubles</b> (≈1 stop each) can you stack in the key? Count what’s really there on the cart.')}
+    ${field('Light headroom (stops)',inp('cam.headroom',{type:'number',ph:'3',r:true}),'How much brighter than a normal 180°, no-scrim setup can your tungsten key get at the subject (by going to a bigger head, spotting in, or moving closer before you lock it)? Each stop is 2× the light. The lab won’t design a base that needs more than this.')}
+    ${field('Playback length per take (seconds)',inp('cam.playSec',{type:'number',ph:'10',r:true}),'Each take plays back this long. Slower frame rates must roll longer: at 6 fps, 10 seconds of playback means rolling 40.')}
+  </div>
+  ${why('Why tungsten + scrims',`<p>A scrim is wire mesh in front of the lamp. It cuts intensity and changes nothing else: the direction, softness and color of the light stay the same. A <b>double</b> cuts about 1 stop and a <b>single</b> about ½.</p><p style="margin:0">Don’t use the dimmer: dimming tungsten lowers its color temperature, so skin gets warmer as it gets darker, and now two things changed. Don’t move the light either: moving it changes contrast.</p>`)}
+  ${orig(`<p class="big">Sony PMW-F3 · EI 800 · 3200K · 25mm · Cinegamma 1–4 + S-Log</p><p style="margin:0" class="hint">Shutter angle, frame rate, T-stop (split marks for half-stops only) and doubles were the variables. The fixture never moved.</p>`)}`;
+}
+
+/* ---------- STEP 3 · N ---------- */
+function stepN(){
+  const p=P();
+  const opts=[['','Choose your shooting stop…']];
+  for(let s=Math.ceil(p.sWide*3-EPS)/3;s<=p.sDeep+EPS;s+=1/3){ const r=Math.round(s*3)/3; const i=Math.round(r*3); opts.push([String(r),'T'+(THIRDS[i]??fmtT(r).slice(1))+(Math.abs(r-Math.round(r))>EPS?`  (${fmtT(r)})`:'')]); }
+  let warnHalf='';
+  if(p.sN!=null&&p.halfMode==='iris'&&p.sN-0.5<p.sWide-EPS) warnHalf=`<div class="warn">N is the widest stop on your lens, so the iris can’t open another half stop. The lab will make N+½ and N+1½ with the shutter instead.</div>`;
+  return head(3,'Choose <em>N.</em>','N is the stop you actually plan to shoot your film at. Every rung of the ladder is written relative to it: N+1, N−2, and so on.')+
+  `<div class="card key"><div class="grid2">
+    ${field('N · your shooting stop',sel('N',opts))}
+    <div class="stat"><span class="label">Your N</span><span class="big-num">${p.sN==null?'—':fmtT(p.sN)}</span></div>
+  </div></div>${warnHalf}
+  ${why('How to choose N',`<ul style="margin:0;padding-left:20px"><li><b>Depth of field.</b> How much of the frame do you want sharp in your masters and singles?</li><li><b>Your filters.</b> Diffusion and ND in front of the lens cost light, so budget for them.</li><li><b>Your locations.</b> How much light can you really put in those rooms?</li><li><b>Your lens.</b> Most glass is sharpest a stop or two in from wide open.</li></ul><p style="margin:10px 0 0">Test at the stop you’ll <em>really</em> use. A ladder built at T8 tells you little about a film shot at T2.</p>`)}
+  ${orig(`<p class="big">N = T2.8</p><p style="margin:0">“Shallow depth of field on wider lenses for the Steadicam shots,” plus filters that would “cut almost a stop of light,” in a location with limited power. The meter and camera both stayed at EI 800 and the grey card was lit to 2.8.</p>`)}`;
+}
+
+/* ---------- STEP 4 · LADDER ---------- */
+function stepLadder(){
+  const L=ladder(); if(!L) return head(4,'Build the <em>ladder.</em>','')+needN();
+  const {rows,base,p}=L;
+  const light=log2(180/base.A0)+base.D0;
+  const allOK=rows.every(r=>r.match&&!r.problems.length);
+  const fpsRows=rows.filter(r=>Math.abs(r.F-p.F0)>EPS).length, irisWhole=rows.filter(r=>Math.abs(r.s-p.sN)>=1-EPS).length;
+  const candA=baseCandidates(p);
+  const shutHead=p.speed?'Shutter (1/x)':'Shutter °';
+  const irisOpts=[]; for(let s=p.sN-6;s<=p.sN+6+EPS;s+=0.5){ if(s>=p.sWide-EPS&&s<=p.sDeep+EPS) irisOpts.push([String(s),irisLabel(s,p.sN)]); }
+  return head(4,'Build the <em>ladder.</em>','The light never moves. You change the <b>camera</b> (shutter, frame rate) and add or pull <b>scrims</b> to step the exposure in exact stops. The iris stays at N except for the half-stops. The lab suggests a ladder; you check every row.')+
+  `<div class="card soft"><span class="label">The stop math · all of it</span>
+    <div class="grid2">
+      <div><b>Shutter angle ×2</b> (90°→180°) = <b>+1 stop</b><br><b>Shutter angle ÷2</b> (180°→90°) = <b>−1 stop</b></div>
+      <div><b>Frame rate ÷2</b> (24→12, same angle) = <b>+1 stop</b><br><b>Pull a double</b> = <b>+1</b> · <b>add a double</b> = <b>−1</b></div>
+    </div>
+    <p class="hint" style="margin:10px 0 0">exposure time = shutter angle ÷ 360 ÷ fps. Each halving of the time is −1 stop, and each full T-stop mark is 1 stop.</p></div>
+  <h2>Your base settings at N</h2>
+  <div class="card key">
+    <div class="grid3">
+      <div class="stat"><span class="label">Iris</span><span class="big-num">${fmtT(p.sN)}</span></div>
+      <div class="stat"><span class="label">Shutter at N</span><span class="big-num">${p.speed?fmtDen(360*p.F0/base.A0):fmtAng(base.A0)}</span></div>
+      <div class="stat"><span class="label">Doubles in at N</span><span class="big-num">${base.D0}</span></div>
+    </div>
+    <p style="margin:14px 0 6px"><b>Why start here?</b> You need room <em>above</em> N. If N sat at a normal 180° with no scrims, the only way to add 5 stops would be crushing the frame rate or opening the iris (which changes depth of field). Starting N at a ${p.speed?'faster shutter':'narrower angle'}${base.D0?` with ${base.D0} double${base.D0>1?'s':''} already in the light`:''} leaves room to <b>open the shutter${base.D0?' and pull scrims':''}</b> for the overs, and to <b>close the shutter${p.Dmax>base.D0?' and add scrims':''}</b> for the unders.</p>
+    ${light>p.headroom+EPS?`<div class="bad">This base needs more light than the ${fmtStops(p.headroom,false)} stops of headroom you listed on the Camera step.</div>`:''}
+    ${light>0.01?`<div class="warn" style="margin-bottom:0"><b>Light budget:</b> this base needs <b>${fmtStops(light,false)} stop${light>1.01?'s':''} more light</b> than a plain 180° setup with no scrims (that’s ${Math.round(Math.pow(2,light)*10)/10}× the light). Choose a tungsten head that can get there, and set its distance/flood <em>before</em> you lock it. If it can’t reach N, pick a base with fewer stops below.</div>`:''}
+    <div class="row noprint" style="margin-top:14px">
+      <label class="check" style="border:0;padding:0"><input type="checkbox" data-bind="base.auto" data-r="1" ${S.base.auto?'checked':''}><span>Let the lab choose</span></label>
+      ${S.base.auto?'':`${sel('base.A0',candA.map(a=>[String(a),(p.speed?fmtDen(360*p.F0/a):fmtAng(a))+' at N']),{num:true,cls:'sm'})}${sel('base.D0',Array.from({length:p.Dmax+1},(_,i)=>[String(i),i+' double'+(i===1?'':'s')+' in at N']),{num:true,cls:'sm'})}`}
+    </div>
+    <p class="hint" style="margin:8px 0 0">${fpsRows?`${fpsRows} rung${fpsRows>1?'s':''} change frame rate (motion looks different, which is fine: you’re judging tone, not movement). `:'No frame-rate changes. '}${irisWhole?`${irisWhole} rung${irisWhole>1?'s':''} move the iris a full stop: depth of field changes there, so note it.`:'The iris never leaves N except for half-stop splits.'}</p>
+  </div>
+  <h2>The ladder</h2>
+  <p>Each row lists what to set. The <b>✓ column checks the math</b>: if you change a cell to match what your camera actually offers, it recalculates, and a row that no longer lands on its rung turns red. <span class="pill ${allOK?'ok':'bad'}">${allOK?'All 15 rows check out':'Some rows need fixing'}</span></p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Rung</th><th>Iris</th><th>${shutHead}</th><th>FPS</th><th>Doubles in</th><th>Roll</th><th>✓ Check</th><th>Meter check</th></tr></thead>
+    <tbody>${rows.map(r=>{
+      const k=rk(r.o), isN=Math.abs(r.o)<EPS;
+      const verdict=r.problems.length?`<span class="pill bad">✗ ${esc(r.problems[0])}</span>`:(r.match?`<span class="pill ok">✓ ${fmtO(r.actual)}</span>`:`<span class="pill bad">✗ this is ${fmtO(r.actual)}</span>`);
+      const shutCell=p.speed?`<input class="sm" type="number" step="any" data-edit="${k}.den" value="${esc(Math.round(r.den*10)/10)}" aria-label="Shutter 1/x for ${fmtO(r.o)}">`:`<input class="sm" type="number" step="any" data-edit="${k}.angle" value="${esc(Math.round(r.angle*100)/100)}" aria-label="Shutter angle for ${fmtO(r.o)}">`;
+      return `<tr class="${isN?'isN':''} ${r.o%1?'half':''}">
+        <td class="rung">${fmtO(r.o)}</td>
+        <td style="min-width:150px"><select class="sm" data-edit="${k}.s" aria-label="Iris for ${fmtO(r.o)}">${irisOpts.map(([v,l])=>`<option value="${v}" ${Math.abs(Number(v)-r.s)<EPS?'selected':''}>${esc(l)}</option>`).join('')}</select></td>
+        <td style="min-width:92px">${shutCell}${p.speed&&Math.abs(log2(nearDen(r.den)/r.den))>0.01?`<div class="how">not on your menu? use ${fmtDen(nearDen(r.den))}</div>`:''}</td>
+        <td style="min-width:80px"><input class="sm" type="number" step="any" data-edit="${k}.F" value="${esc(fmtFps(r.F))}" aria-label="FPS for ${fmtO(r.o)}"></td>
+        <td style="min-width:70px"><input class="sm" type="number" step="1" data-edit="${k}.D" value="${r.D}" aria-label="Doubles for ${fmtO(r.o)}"></td>
+        <td class="mono">${r.rec}s</td>
+        <td>${verdict}<div class="how">${esc(r.how)}</div></td>
+        <td class="meter">${r.D!==base.D0?`Incident now reads <b>${fmtT(r.incident)}</b><br>`:''}Meter at ${fmtFps(r.F)} fps · ${p.speed?fmtDen(r.den):fmtAng(r.angle)} → <b>${fmtT(r.meterRec)}</b>, lens at ${esc(irisLabel(r.s,p.sN))}</td>
+      </tr>`;}).join('')}</tbody></table></div>
+  <div class="row noprint"><button class="btn small" data-act="resetLadder">Reset every row to the lab’s suggestion</button>${Object.keys(S.edits).length?'<span class="hint">You’ve edited some cells by hand.</span>':''}</div>
+  ${why('How to read the “Meter check” column',`<p>This is how you <b>prove</b> each rung with the Speedmaster. Dial that row’s frame rate and shutter angle into the meter (same ISO) and take an incident reading at the subject. The meter tells you the stop that would be a correct exposure <em>at those camera settings</em>. Compare it to where the lens actually is:</p><p><b>meter says T5.6, lens at T2.8 → the lens is 2 stops more open than “correct” → N+2.</b></p><p style="margin:0">For rows where a scrim goes in or out, first check that the incident reading moved by the amount you expected. Scrims are nominal, and a “double” can really be ¾ or 1¼ stops. If it’s off, log the real reading on the Shoot step and the lab corrects that take’s true offset.</p>`)}
+  <p class="hint">Readings like “T0.7” in the meter column are just the math continuing past the widest stop on the meter’s scale. On the Speedmaster, the display at that point means “under”: you’re more than that far below.</p>
+  ${why('Why half-stops only near N',`<p style="margin:0">The interesting decisions live within a stop and a half of N (where skin gets smoothest, where it starts to go). Out past ±2 you’re just finding the walls, so whole stops are enough.</p>`)}
+  <details><summary>See the original F3 ladder</summary>
+  ${orig(`<p class="hint">N = T2.8 · 45° · 24 fps · 1 double in. Iris only split for halves; shutter did the middle, frame rate the top, doubles the bottom.</p>
+   <div class="tbl-wrap"><table><thead><tr><th>Rung</th><th>T-stop</th><th>Angle</th><th>FPS</th><th>Scrims</th><th>Roll</th></tr></thead><tbody>
+   ${[['+5','2.8','180','6','none','40s'],['+4','2.8','180','6','1 dbl','40s'],['+3','2.8','180','12','1 dbl','20s'],['+2','2.8','180','24','1 dbl','10s'],['+1½','2/2.8','90','24','1 dbl','10s'],['+1','2.8','90','24','1 dbl','10s'],['+½','2/2.8','45','24','1 dbl','10s'],['N','2.8','45','23.976','1 dbl','10s'],['−½','2.8/4','45','24','1 dbl','10s'],['−1','2.8','22.5','24','1 dbl','10s'],['−1½','2.8/4','22.5','24','1 dbl','10s'],['−2','2.8','11.25','24','1 dbl','10s'],['−3','2.8','11.25','24','2 dbl','10s'],['−4','2.8','11.25','24','3 dbl','10s'],['−5','2.8','11.25','24','4 dbl','10s']].map(r=>`<tr><td class="rung">${r[0]}</td>${r.slice(1).map(c=>`<td class="mono">${c}</td>`).join('')}</tr>`).join('')}
+   </tbody></table></div>`)}</details>`;
+}
+
+/* ---------- STEP 5 · METER ---------- */
+function stepMeter(){
+  const L=ladder(); if(!L) return head(5,'Light to N. <em>Then lock everything.</em>','')+needN();
+  const {base,p}=L, c=S.cam;
+  const baseShut=p.speed?fmtDen(360*p.F0/base.A0):fmtAng(base.A0);
+  const eqDen=Math.round(360*p.F0/base.A0);
+  const rd=k=>parseReading(S.setup[k]);
+  const key=rd('key'),fill=rd('fill'),bg=rd('bg'),hair=rd('hair');
+  const offs=[['Key side',key],['Fill side',fill],['Background',bg],['Hair / separation',hair]];
+  let ratio='';
+  if(key!=null&&fill!=null){ const d=key-fill; ratio=`Key is <b>${fmtStops(d,false)} stop${Math.abs(d-1)<0.05?'':'s'}</b> ${d>=0?'over':'under'} fill → about <b>${(Math.round(Math.pow(2,Math.abs(d))*10)/10)}:1</b>.`; }
+  return head(5,'Light to N. <em>Then lock everything.</em>','You set the light <b>once</b>, with the meter, and then you never touch it except to add or pull scrims. Here is exactly how to meter for <em>your</em> ladder.')+
+  `<div class="card key"><span class="label">Speedmaster settings for lighting to N</span>
+   <div class="grid3">
+     <div class="stat"><span class="label">ISO</span><span class="big-num">${esc(c.ei||'—')}</span></div>
+     <div class="stat"><span class="label">Frame rate</span><span class="big-num">${fmtFps(p.F0)}</span></div>
+     <div class="stat"><span class="label">Shutter</span><span class="big-num">${baseShut}</span></div>
+   </div>
+   <p style="margin:12px 0 0">Target incident reading at the subject: <span class="big-num" style="font-size:32px">${fmtT(p.sN)}</span> &nbsp;with <b>${base.D0} double${base.D0===1?'':'s'}</b> in the key.</p></div>
+  <ol class="steps-list">
+    <li><div><b>Set the meter.</b> On the Speedmaster, choose the <b>cine mode where you enter frame rate and shutter angle</b> (HD Cine). Set ISO <b>${esc(c.ei||'—')}</b>, <b>${fmtFps(p.F0)} fps</b>, <b>${p.speed?`${fmtAng(base.A0)} (= ${fmtDen(eqDen)})`:fmtAng(base.A0)}</b>, filter factor 0. <span class="hint">If your meter only takes shutter speeds, use ${fmtDen(eqDen)}.</span>${Math.abs(base.A0-180)>1?` <span class="hint">Yes, ${fmtAng(base.A0)}, not 180°. The meter has to match what the camera is really doing at N, or your N will be off by ${fmtStops(Math.abs(log2(180/base.A0)),false)} stop${Math.abs(log2(180/base.A0))>1.01?'s':''}.</span>`:''}</div></li>
+    <li><div><b>Put ${base.D0?`${base.D0} double${base.D0>1?'s':''}`:'no scrims'} in the key</b> before you meter.${base.D0?' They’re part of N: pulling them later is how you make the overs.':''}</div></li>
+    <li><div><b>Incident reading at the stand-in’s nose</b>, dome out and pointed at the lens. It measures the light <em>arriving</em>, not what bounces off.</div></li>
+    <li><div><b>Move the lamp until the meter reads exactly ${fmtT(p.sN)}.</b> Spot/flood it or move it closer or farther. <b>Don’t</b> use the dimmer (tungsten goes warm) and <b>don’t</b> touch the iris. Leave headroom: if the head is already at full spot and full-up to reach N, you’re at the edge.</div></li>
+    <li><div><b>Lock it.</b> Tape the stand, the flood/spot knob and the head. Measure and write down the light-to-subject distance.</div></li>
+    <li><div><b>Set the camera to match:</b> ${fmtT(p.sN)} · ${baseShut} · ${fmtFps(p.F0)} fps · EI ${esc(c.ei||'—')} · ${esc(c.wb||3200)}K · ND out · every auto off.</div></li>
+    <li><div><b>Confirm on the waveform.</b> The grey card should sit around <b>40–45 IRE</b> (log profiles land a little lower, about 38–42). <b>The meter sets N and the waveform confirms it.</b> If the card is far off, something is set wrong: re-check the meter’s fps, shutter and ISO before touching the light.</div></li>
+  </ol>
+  <h2>Log the readings around the frame</h2>
+  <p>Incident readings, meter still at the settings above. Type them the way the Speedmaster shows them, e.g. <span class="mono">2.8</span>, <span class="mono">4 1/3</span>, or <span class="mono">2.8 7</span> (2.8 + 7/10).</p>
+  <div class="grid2">
+    ${[['key','Key side'],['fill','Fill side'],['bg','Background'],['hair','Hair / separation']].map(([k,l])=>field(l,inp('setup.'+k,{ph:'e.g. 2.8',r:true}),(()=>{const v=rd(k);return v==null?'':`= <b>${fmtO(v-p.sN)}</b> relative to N`;})())).join('')}
+    ${field('Light-to-subject distance',inp('setup.dist',{ph:'e.g. 9 ft 4 in'}))}
+    ${field('Fixture',inp('setup.fixture',{ph:'e.g. Arri 2K Fresnel, 3/4 spot'}))}
+  </div>
+  ${ratio?`<div class="good">${ratio}</div>`:''}
+  ${why('Why lock everything',`<p style="margin:0">Once N is set, the only thing allowed to change for the rest of the ladder is exposure: shutter, frame rate, scrims, and the iris for the half-steps. If the light drifts (a bumped stand, a lamp still warming up, a dimmer someone nudged), every take after that is measuring the wrong thing.</p>`)}`;
+}
+
+/* ---------- STEP 6 · MAP ---------- */
+const MK_LABELS=['Grey card','Skin — key side','Skin — fill side','Hero fabric','Second fabric','Background','Hair / edge','Brightest highlight','Deepest shadow you care about','Practical','Other'];
+function zone(v){
+  const clip=parseFloat(S.map.clip), floor=parseFloat(S.map.floor);
+  const hasC=!isNaN(clip), hasF=!isNaN(floor);
+  if(hasC&&v>clip+EPS) return 'hot';
+  if(hasF&&v<-floor-EPS) return 'cold';
+  if(hasC||hasF) return 'good';
+  return 'n';
+}
+function stepMap(){
+  const p=P(); if(p.sN==null) return head(6,'Map your <em>frame.</em>','')+needN();
+  const M=S.map, rung=Number(M.rung)||0;
+  const ms=M.markers.map((m,i)=>({...m,i,s:parseReading(m.reading)}));
+  const valid=ms.filter(m=>m.s!=null);
+  return head(6,'Map your <em>frame.</em>','Before you roll, spot-meter the things that matter: skin, fabric, background, the brightest highlight, the deepest shadow. Pin each reading on a still of your frame and you’ll see where every element lands at every rung.')+
+  `${why('What a spot reading tells you',`<p>With the 1° spot (same meter settings as N), aim at one surface and press measure. The number is the stop that would make <em>that surface</em> middle grey. If N = ${fmtT(p.sN)} and the skin spot reads ${fmtT(p.sN+1)}, the skin is <b>1 stop brighter than grey: N+1</b>.</p><p style="margin:0">Then the ladder moves everything together. At the N+2 rung, that skin sits at <b>N+3</b>. Use the rung buttons below to see it.</p>`)}
+  <div class="row noprint">
+    <button class="btn" data-act="pickImg">${M.img?'Replace photo':'Add a photo of your frame'}</button>
+    ${M.img?`<button class="btn ${S.ui.adding?'primary':''}" data-act="toggleAdd">${S.ui.adding?'Click the photo to drop a reading…':'+ Add reading on photo'}</button>`:''}
+    <button class="btn ghost" data-act="addMarker">+ Add reading without photo</button>
+    ${M.img?'<button class="btn small ghost" data-act="rmImg">Remove photo</button>':''}
+  </div>
+  <p class="hint">Use a frame grab from the monitor or a phone photo from beside the camera. It stays in this browser only.</p>
+  <span class="label" style="margin-top:14px">Preview the frame at rung</span>
+  <div class="rungbar">${RUNGS.map(o=>`<button class="${Math.abs(o-rung)<EPS?'on':''}" data-act="mapRung" data-arg="${o}">${fmtO(o)}</button>`).join('')}</div>
+  ${M.img?`<div class="map ${S.ui.adding?'adding':''}" id="mapBox"><img src="${M.img}" alt="Test frame with meter readings" id="mapImg">${ms.map(m=>{const v=m.s==null?null:m.s-p.sN+rung;const z=v==null?'n':zone(v);return `<div class="mk" style="left:${m.x}%;top:${m.y}%"><span class="dotn">${m.i+1}</span><span class="tag ${z}">${m.s==null?esc(m.label||'?'):`${esc(fmtT(m.s))} · ${fmtO(v)}`}</span></div>`;}).join('')}</div>`:''}
+  <h3>Readings</h3>
+  ${ms.length?`<div class="tbl-wrap"><table><thead><tr><th>#</th><th>What</th><th>Spot reading</th><th>At N</th><th>At ${fmtO(rung)}</th><th></th></tr></thead><tbody>
+    ${ms.map(m=>`<tr><td class="mono">${m.i+1}</td><td style="min-width:170px">${sel(`map.markers.${m.i}.label`,MK_LABELS)}</td><td style="min-width:110px">${inp(`map.markers.${m.i}.reading`,{ph:'e.g. 4 1/3',cls:'sm',r:true})}</td><td class="mono">${m.s==null?'—':fmtO(m.s-p.sN)}</td><td class="mono"><b>${m.s==null?'—':fmtO(m.s-p.sN+rung)}</b></td><td><button class="btn small ghost" data-act="rmMarker" data-arg="${m.i}" aria-label="Delete reading">✕</button></td></tr>`).join('')}
+  </tbody></table></div>`:'<p class="muted">No readings yet.</p>'}
+  ${valid.length?`<h3>Where everything lands, rung by rung</h3>
+  <p class="hint">Each cell shows where that element sits relative to grey on that take. After the test, fill in your clip point and noise floor below to color the grid.</p>
+  <div class="tbl-wrap"><table class="heat"><thead><tr><th>Element</th>${RUNGS.map(o=>`<th>${fmtO(o)}</th>`).join('')}</tr></thead><tbody>
+  ${valid.map(m=>`<tr><td class="lbl">${m.i+1}. ${esc(m.label)}</td>${RUNGS.map(o=>{const v=m.s-p.sN+o;return `<td class="z-${zone(v)}">${fmtO(v).replace('N','')||'0'}</td>`;}).join('')}</tr>`).join('')}
+  </tbody></table></div>`:''}
+  <div class="card soft"><span class="label">After the test (optional)</span>
+    <div class="grid2">
+      ${field('Clip point: stops above grey',inp('map.clip',{type:'number',ph:'e.g. 3',r:true}),'The first rung where the <b>grey card itself</b> flatlines at the top of the waveform tells you this number. Leave blank if it never clipped.')}
+      ${field('Noise floor: stops below grey',inp('map.floor',{type:'number',ph:'e.g. 4',r:true}),'The first rung where the grey card dissolves into noise.')}
+    </div>
+    <p class="hint" style="margin:0"><span class="pill bad">red</span> past clip · <span class="pill ok">green</span> holds · <span class="pill" style="background:var(--blue-soft);color:var(--blue)">blue</span> in the noise</p>
+  </div>`;
+}
+
+/* ---------- STEP 7 · SHOOT ---------- */
+function stepShoot(){
+  const L=ladder(); if(!L) return head(7,'Take this page <em>to the floor.</em>','')+needN();
+  const {rows,base,p}=L, pi='p'+curProf(), T=S.takes[pi]||{};
+  const done=RUNGS.filter(o=>T[rk(o)]?.shot).length;
+  const cl=[
+    'Tungsten head locked off. Stand, head and flood/spot taped.',
+    `Base scrims in: <b>${base.D0} double${base.D0===1?'':'s'}</b>.`,
+    'Light-to-subject distance measured and written down.',
+    `Incident at the nose, dome to lens, reads <b>${fmtT(p.sN)}</b> (meter at ISO ${esc(S.cam.ei)}, ${fmtFps(p.F0)} fps, ${fmtAng(base.A0)}).`,
+    'Dimmer untouched (or no dimmer).',
+    `White balance fixed at ${esc(S.cam.wb||3200)}K, no auto.`,
+    `EI fixed at ${esc(S.cam.ei)}.`,
+    'ND out. Auto iris, auto ISO and auto everything off.',
+    'Grey card verified near 40–45 IRE on the waveform.',
+    'Slate readable in a thumbnail.'
+  ];
+  return head(7,'Take this page <em>to the floor.</em>','Clear the checklist, then shoot top to bottom. Tick each take as it’s done. If anything drifts, stop, relock, and reshoot.')+
+  profTabs()+
+  `<h2>Before the first take</h2><div class="card">${cl.map((t,i)=>chk(`checklist.${pi}_${i}`,t)).join('')}</div>
+  <h2>Take log <span class="pill ${done===RUNGS.length?'ok':'neutral'}">${done}/${RUNGS.length} shot</span></h2>
+  <p class="hint">Settings come from your ladder. If a scrim row’s incident reading isn’t what you expected, type the real reading and the lab recalculates that take’s true offset.</p>
+  <div class="tbl-wrap"><table>
+   <thead><tr><th>Take</th><th>Rung · slate</th><th>Roll</th><th>Shot</th><th>Scrim incident</th><th>Waveform notes</th><th>Verdict</th></tr></thead>
+   <tbody>${rows.map((r,i)=>{
+     const k=rk(r.o), path=`takes.${pi}.${k}`, t=T[k]||{};
+     const inc=parseReading(t.inc); let trueOff='';
+     if(inc!=null){ const tr=log2(r.t/L.t0)+(inc-p.sN)+(p.sN-r.s); trueOff=`<div class="how">true offset <b>${fmtO(tr)}</b>${Math.abs(tr-r.o)>0.15?' ⚠︎':''}</div>`; }
+     return `<tr class="${Math.abs(r.o)<EPS?'isN':''}">
+       <td class="mono">${i+1}</td>
+       <td><div class="rung mono">${fmtO(r.o)}</div><div class="slate how">${esc(r.slate)}</div></td>
+       <td class="mono">${r.rec}s</td>
+       <td><input type="checkbox" style="width:22px;height:22px;accent-color:var(--ok)" data-bind="${path}.shot" data-r="1" ${t.shot?'checked':''} aria-label="Shot ${fmtO(r.o)}"></td>
+       <td style="min-width:100px">${r.D!==base.D0?`<input class="sm" type="text" data-bind="${path}.inc" data-r="1" value="${esc(t.inc||'')}" placeholder="expect ${esc(fmtT(r.incident).slice(1))}">${trueOff}`:'<span class="muted">—</span>'}</td>
+       <td style="min-width:180px"><input class="sm" type="text" data-bind="${path}.notes" value="${esc(t.notes||'')}" placeholder="skin at __ IRE…"></td>
+       <td style="min-width:120px">${sel(`${path}.verdict`,[['',' '],['ok','✓ holds'],['mid','~ borderline'],['bad','✗ breaks']],{cls:'sm',r:false})}</td></tr>`;}).join('')}</tbody></table></div>
+  ${why('Slate protocol',`<p style="margin:0">Every take slates its <b>rung</b> (N+3, N−1½…) big enough to read in a thumbnail, plus T-stop, shutter, fps and scrims. A ladder you can’t identify in review is a ladder you didn’t shoot. The small grey line under each rung above is your slate text.</p>`)}`;
+}
+
+/* ---------- STEP 8 · ONE-LIGHT ---------- */
+function stepOneLight(){
+  const pi='p'+curProf(), base=`analysis.${pi}`;
+  const A=S.analysis[pi]||{}, ruler=A.ruler||[];
+  return head(8,'One light: what the <em>sensor</em> did.','Set one correction on the N take, then copy it unchanged onto every other take. No per-shot fixing. Any difference you see now came from the camera, not the grade.')+
+  profTabs()+
+  `<ol class="steps-list">
+    <li><div>Play the ladder in order, +5 down to −5. Watch <b>skin first</b>, then fabric, then the chart.</div></li>
+    <li><div>On the waveform, mark where skin <b>flatlines toward clip</b> going up, and where the shadow trace <b>dissolves into chatter</b> going down.</div></li>
+    <li><div>Write every conclusion as an <b>N-value</b>. “Nothing important above N+2” is a rule; “it got blown out” is not.</div></li>
+  </ol>
+  <div class="card"><span class="label">One-light analysis</span><div class="grid2">
+    ${field('Skin loses detail / warmth at',sel(base+'.skin',rungOpts(1),{r:false}))}
+    ${field('Fabrics stop reading texture at',sel(base+'.fabric',rungOpts(1),{r:false}))}
+    ${field('Last acceptable highlight at',sel(base+'.hi',rungOpts(1)))}
+    ${field('Shadows crush at',sel(base+'.crush',rungOpts(-1)))}
+    ${field('Most flattering under-value',sel(base+'.flatter',rungOpts(-1),{r:false}))}
+    ${field('Skin reads smoothest at',sel(base+'.smooth',rungOpts(0),{r:false}))}
+  </div>
+  ${field('Other observations',`<textarea data-bind="${base}.notes">${esc(A.notes||'')}</textarea>`)}</div>
+  <h3>Stops ruler: shade the boxes where detail survives</h3>
+  <div class="ruler">${[-5,-4,-3,-2,-1,0,1,2,3,4,5].map((o,i)=>`<button class="${ruler[i]?'on':''} ${o===0?'isN':''}" data-act="ruler" data-arg="${i}" aria-pressed="${!!ruler[i]}" aria-label="${fmtO(o)}"></button>`).join('')}</div>
+  <div class="ruler-l">${[-5,-4,-3,-2,-1,0,1,2,3,4,5].map(o=>`<span>${o===0?'N':(o>0?'+':'−')+Math.abs(o)}</span>`).join('')}</div>
+  <p class="hint">← shadow · noise floor &nbsp;&nbsp;·&nbsp;&nbsp; highlight · clip →</p>
+  ${orig(`<p class="big">Skin read smoothest at N+½. Nothing important survived above N+2. Caution below N−1½: noise arrived before mood did.</p><p class="hint" style="margin:0">Your numbers will differ. That’s the point of running your own test.</p>`)}`;
+}
+
+/* ---------- STEP 9 · BEST-LIGHT ---------- */
+function stepBestLight(){
+  const pi='p'+curProf(), base=`analysis.${pi}`, A=S.analysis[pi]||{};
+  const ov=A.overRec==='none'?5:Number(A.overRec), un=A.underRec==='none'?-5:Number(A.underRec);
+  const lat=(A.overRec&&A.underRec)?`+${fmtStops(ov,false)} / −${fmtStops(Math.abs(un),false)}`:'+__ / −__';
+  return head(9,'Best light: <em>assigning latitude.</em>','Now the colorist rescues each take on its own. Push the overs down and the unders up until the image breaks. The last rung that still recovers cleanly, in each direction, is your latitude in this profile.')+
+  profTabs()+
+  `<div class="grid2">
+    <div class="card soft"><span class="label">Overs, pushed down · broken looks like</span>Highlights turn grey and waxy, skin goes flat, and clipped channels tint whites cyan or magenta. Once a channel has clipped, no grade brings it back.</div>
+    <div class="card soft"><span class="label">Unders, pushed up · broken looks like</span>Noise blooms in the mids first, shadows band and blotch, and color goes thin in the lift. If it chatters at 100% zoom, it fails.</div>
+  </div>
+  <div class="card"><span class="label">Best-light analysis</span><div class="grid2">
+    ${field('Last recoverable over',sel(base+'.overRec',rungOpts(1)))}
+    ${field('Last recoverable under',sel(base+'.underRec',rungOpts(-1)))}
+    ${field('First color falsification seen at',sel(base+'.colorFalse',rungOpts(0),{r:false}))}
+    ${field('First noise / banding seen at',sel(base+'.noise',rungOpts(0),{r:false}))}
+    ${field('Shadows look best (blackest, no noise) at',sel(base+'.bestShadow',rungOpts(0),{r:false}))}
+    ${field('Highlight roll-off looks best at',sel(base+'.bestHi',rungOpts(0),{r:false}))}
+    ${field('Skin looks best at',sel(base+'.bestSkin',rungOpts(0),{r:false}))}
+  </div></div>
+  <div class="card key"><span class="label">Assigned latitude · ${esc(profiles()[curProf()])}</span><span class="big-num">${lat}</span> <span class="muted">stops</span>
+  <p class="hint" style="margin:8px 0 0">“Recoverable” means it matches the N take with no visible damage: no color shift, no blotches, no crawling noise. State the standard you judged by in your write-up.</p></div>
+  ${orig(`<p class="big">Rec709 assigned latitude: ±1 stop.</p><p style="margin:0">Conclusion: “All effects, saturation and exposure should be done in camera.” A tight latitude isn’t a bad camera. It’s a rule: get it right on set.</p>`)}`;
+}
+
+/* ---------- STEP 10 · PROFILES & EI ---------- */
+function eiAdvice(A){
+  if(!A||!A.overRec||!A.underRec) return null;
+  const ov=A.overRec==='none'?5:Number(A.overRec), un=A.underRec==='none'?5:Math.abs(Number(A.underRec));
+  const x=(un-ov)/2, ei=Number(S.cam.ei)||800;
+  if(Math.abs(x)<0.3) return {txt:`Balanced (+${fmtStops(ov,false)} / −${fmtStops(un,false)}). Keep EI ${ei}.`,ei};
+  const nu=snapEI(ei*Math.pow(2,x));
+  return x>0?{txt:`Highlights run out first (+${fmtStops(ov,false)} vs −${fmtStops(un,false)}). Rating about ${fmtStops(x,false)} stop faster, <b>EI ${nu}</b>, would balance it: more room above skin, more noise below.`,ei:nu}
+            :{txt:`Shadows run out first (−${fmtStops(un,false)} vs +${fmtStops(ov,false)}). Rating about ${fmtStops(-x,false)} stop slower, <b>EI ${nu}</b>, would give cleaner shadows and less highlight room.`,ei:nu};
+}
+function stepProfiles(){
+  const ps=profiles();
+  return head(10,'Same ladder, <em>every profile.</em>','Shoot the identical ladder once per profile with everything else locked, so the profile is the only variable. Compare highlight roll-off on the over side and shadow saturation on the under side.')+
+  `<div class="tbl-wrap"><table><thead><tr><th>Profile</th><th>Latitude</th><th>Highlight roll-off notes</th><th>Shadow saturation notes</th><th>Verdict</th></tr></thead><tbody>
+  ${ps.map((p,i)=>{const A=S.analysis['p'+i]||{};const lat=(A.overRec&&A.underRec)?`+${fmtStops(A.overRec==='none'?5:Number(A.overRec),false)} / −${fmtStops(A.underRec==='none'?5:Math.abs(Number(A.underRec)),false)}`:'<span class="muted">do step 9</span>';
+    return `<tr><td><b>${esc(p)}</b></td><td class="mono">${lat}</td><td style="min-width:180px"><textarea data-bind="profileCmp.p${i}.roll" style="min-height:60px">${esc(S.profileCmp['p'+i]?.roll||'')}</textarea></td><td style="min-width:180px"><textarea data-bind="profileCmp.p${i}.sat" style="min-height:60px">${esc(S.profileCmp['p'+i]?.sat||'')}</textarea></td><td style="min-width:150px">${inp(`profileCmp.p${i}.verdict`,{ph:'e.g. Use for night int.',cls:'sm',r:true})}</td></tr>`;}).join('')}
+  </tbody></table></div>
+  <h2>Should you re-rate the EI?</h2>
+  ${ps.map((p,i)=>{const a=eiAdvice(S.analysis['p'+i]);return `<div class="card"><span class="label">${esc(p)}</span>${a?`<p style="margin:0">${a.txt}</p>`:'<p class="muted" style="margin:0">Fill in best-light for this profile first.</p>'}</div>`;}).join('')}
+  ${why('How re-rating works',`<p>Rate the sensor <b>faster</b> (a higher EI than native) and your meter asks for less light. Skin lands lower, leaving more room above it before clip, and you pay in shadow noise. Rate it <b>slower</b> (a lower EI) and you get cleaner shadows with less highlight room.</p><p style="margin:0">Your creative priorities can override the balanced number. Protecting practicals and windows is a reason to rate faster. <b>Whatever you pick, re-run the ladder at the new EI to confirm it.</b></p>`)}
+  ${orig(`<p class="big">S-Log chosen over Cinegammas 1–4.</p><p style="margin:0">Better highlight roll-off for practicals in frame, and saturation stayed consistent going into shadow. “Shadow detail and overall blacks are important to me.”</p>`)}`;
+}
+
+/* ---------- STEP 11 · RULES ---------- */
+const VAGUE=/\b(blown|bright|brighter|dark|darker|nice|good|bad|pretty|too|very|really|kind of|sort of|a bit|a little|some|maybe|try|careful|watch out|looks?)\b/i;
+function suggestRules(){
+  const ps=profiles(), out=[]; const L=ladder(); const c=S.cam;
+  ps.forEach((p,i)=>{
+    const A=S.analysis['p'+i]||{};
+    const prev=v=>{const idx=RUNGS.indexOf(Number(v));return idx>=0&&idx<RUNGS.length-1?RUNGS[idx+1]:null;};
+    if(A.skin&&A.skin!=='none'){const r=prev(A.skin); if(r!=null) out.push(`In ${p}, never place key-side skin above ${fmtO(r)}.`);}
+    if(A.hi&&A.hi!=='none') out.push(`In ${p}, nothing important above ${fmtO(Number(A.hi))}. Flag and knock down any practical or window that meters hotter.`);
+    if(A.crush&&A.crush!=='none'){const idx=RUNGS.indexOf(Number(A.crush));const r=idx>0?RUNGS[idx-1]:null; if(r!=null) out.push(`In ${p}, below ${fmtO(r)} add light instead of rating up.`);}
+    if(A.overRec&&A.underRec) out.push(`${p} latitude is +${fmtStops(A.overRec==='none'?5:Number(A.overRec),false)} / −${fmtStops(A.underRec==='none'?5:Math.abs(Number(A.underRec)),false)}. Anything outside that gets fixed on set, not in the grade.`);
+    const a=eiAdvice(A); if(a) out.push(`Rate the ${c.name||'camera'} at EI ${a.ei} in ${p}.`);
+    const v=S.profileCmp['p'+i]?.verdict; if(v) out.push(`${p}: ${v}.`);
+  });
+  if(L) out.push(`Meter every setup at the shoot’s real fps and shutter angle. N is ${fmtT(L.p.sN)}.`);
+  return out;
+}
+function stepRules(){
+  const rules=S.rules||[];
+  return head(11,'What you <em>live by.</em>','One page of rules your gaffer and 1st AC can hold you to. A usable rule names a number and a direction, so someone can check it on set when there’s no time to argue.')+
+  `<div class="card soft"><span class="label">Suggested from your results</span>
+   ${suggestRules().map((r,i)=>`<div class="row" style="justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)"><span>${esc(r)}</span><button class="btn small noprint" data-act="useRule" data-arg="${i}">Use</button></div>`).join('')||'<p class="muted" style="margin:0">Finish steps 8–10 to get suggestions.</p>'}
+  </div>
+  <h2>My on-set rules</h2>
+  <p class="hint">Forms that work: “Never place skin above N+__.” · “Below N−__, add light instead of rating up.” · “Profile __ for day exteriors.”</p>
+  ${rules.map((r,i)=>{const hasNum=/N\s*[+−-]|\d/.test(r||'');const vague=VAGUE.test(r||'');
+    return `<div style="margin:10px 0"><div class="row" style="flex-wrap:nowrap"><span class="mono muted">${String(i+1).padStart(2,'0')}</span>${inp('rules.'+i,{r:true})}<button class="btn small ghost" data-act="rmRule" data-arg="${i}" aria-label="Delete rule">✕</button></div>
+    ${r?`<div class="lint">${!hasNum?'<span class="pill bad">no number</span> ':''}${vague?`<span class="pill warn">adjective: “${esc((r.match(VAGUE)||[''])[0])}”</span> `:''}${hasNum&&!vague?'<span class="pill ok">checkable</span>':''}</div>`:''}</div>`;}).join('')}
+  <button class="btn small" data-act="addRule">+ Add a rule</button>`;
+}
+
+/* ---------- STEP 12 · PACKET ---------- */
+function stepPacket(){
+  const L=ladder(), g=S.group, c=S.cam, ps=profiles();
+  const members=g.members.filter(m=>m.name).map(m=>`${esc(m.name)}${m.role?` <span class="muted">(${esc(m.role.split(' — ')[0])})</span>`:''}`).join(', ');
+  let html=head(12,'Your <em>packet.</em>','Everything below is your D1–D4 deliverable. Print it or save it as a PDF for Blackboard, and export the group file so everyone has a copy.')+
+  `<div class="row noprint" style="margin:10px 0 24px">
+    <button class="btn primary" data-act="print">Print / Save as PDF</button>
+    <button class="btn" data-act="export">Export group file</button>
+    <button class="btn" data-act="import">Import group file</button>
+    <button class="btn ghost" data-act="newGroup">Start a new group</button>
+  </div>
+  <div class="card key"><span class="label">FILM 393 · Camera test</span>
+    <h2 style="margin-top:0">${esc(g.name||'Group')} <span class="muted" style="font-size:18px">${esc(g.section)} ${esc(g.date)}</span></h2>
+    <p style="margin:0">${members||'<span class="muted">No members listed</span>'}</p>
+    <p style="margin:8px 0 0" class="mono">${esc(c.name||'Camera?')} · EI ${esc(c.ei)} · ${esc(c.wb)}K · ${esc(c.lens||'lens?')} · N ${L?fmtT(L.p.sN):'—'} · profiles: ${esc(ps.join(', '))}</p></div>`;
+  if(L){
+    const {rows,base,p}=L;
+    html+=`<h2>D1 · Ladder</h2><p class="hint">Base at N: ${fmtT(p.sN)} · ${p.speed?fmtDen(360*p.F0/base.A0):fmtAng(base.A0)} · ${fmtFps(p.F0)} fps · ${base.D0} double(s). Lit to ${fmtT(p.sN)} incident with the meter at the same settings.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Rung</th><th>Iris</th><th>Shutter</th><th>FPS</th><th>Dbl</th><th>Roll</th><th>✓</th><th>Meter reads</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr class="${Math.abs(r.o)<EPS?'isN':''}"><td class="rung">${fmtO(r.o)}</td><td class="mono">${esc(irisLabel(r.s,p.sN))}</td><td class="mono">${p.speed?fmtDen(r.den):fmtAng(r.angle)}</td><td class="mono">${fmtFps(r.F)}</td><td class="mono">${r.D}</td><td class="mono">${r.rec}s</td><td>${r.match&&!r.problems.length?'✓':'✗'}</td><td class="mono">${fmtT(r.meterRec)}</td></tr>`).join('')}
+    </tbody></table></div>
+    <p class="mono hint">Readings · key ${esc(S.setup.key||'—')} · fill ${esc(S.setup.fill||'—')} · bg ${esc(S.setup.bg||'—')} · hair ${esc(S.setup.hair||'—')} · distance ${esc(S.setup.dist||'—')} · ${esc(S.setup.fixture||'')}</p>`;
+    const mk=S.map.markers.map(m=>({...m,s:parseReading(m.reading)})).filter(m=>m.s!=null);
+    if(mk.length) html+=`<p class="hint">Frame map: ${mk.map(m=>`${esc(m.label)} ${fmtT(m.s)} (${fmtO(m.s-p.sN)})`).join(' · ')}</p>`;
+  }
+  html+=`<h2 class="pagebreak">D2 · One-light analysis</h2>`+ps.map((p,i)=>{const A=S.analysis['p'+i]||{};const f=v=>v?(v==='none'?'held to the end':fmtO(Number(v))):'—';
+    return `<div class="card"><span class="label">${esc(p)}</span><p style="margin:0">Skin loses detail at <b>${f(A.skin)}</b> · fabrics stop at <b>${f(A.fabric)}</b> · last acceptable highlight <b>${f(A.hi)}</b> · shadows crush at <b>${f(A.crush)}</b> · most flattering under <b>${f(A.flatter)}</b> · skin smoothest <b>${f(A.smooth)}</b></p>${A.notes?`<p style="margin:8px 0 0">${esc(A.notes)}</p>`:''}</div>`;}).join('');
+  html+=`<h2>D3 · Best-light analysis</h2>`+ps.map((p,i)=>{const A=S.analysis['p'+i]||{};const f=v=>v?(v==='none'?'held to the end':fmtO(Number(v))):'—';const cmp=S.profileCmp['p'+i]||{};
+    return `<div class="card"><span class="label">${esc(p)}</span><p style="margin:0"><b>Assigned latitude ${A.overRec&&A.underRec?`+${fmtStops(A.overRec==='none'?5:Number(A.overRec),false)} / −${fmtStops(A.underRec==='none'?5:Math.abs(Number(A.underRec)),false)}`:'—'}</b> · color falsifies ${f(A.colorFalse)} · noise/banding ${f(A.noise)} · best shadows ${f(A.bestShadow)} · best roll-off ${f(A.bestHi)} · best skin ${f(A.bestSkin)}</p>${cmp.roll||cmp.sat?`<p style="margin:8px 0 0">Roll-off: ${esc(cmp.roll||'—')} · Shadows: ${esc(cmp.sat||'—')}</p>`:''}${cmp.verdict?`<p style="margin:8px 0 0"><b>Verdict:</b> ${esc(cmp.verdict)}</p>`:''}</div>`;}).join('');
+  html+=`<h2>D4 · My on-set rules</h2><div class="card key"><ol style="margin:0;padding-left:22px">${(S.rules||[]).filter(Boolean).map(r=>`<li style="margin:6px 0">${esc(r)}</li>`).join('')||'<li class="muted">No rules yet.</li>'}</ol></div>`;
+  html+=`<h2 class="pagebreak">Take logs</h2>`+ps.map((p,i)=>{const T=S.takes['p'+i]||{};return `<h3>${esc(p)}</h3><div class="tbl-wrap"><table><thead><tr><th>Rung</th><th>Shot</th><th>Notes</th><th>Verdict</th></tr></thead><tbody>${RUNGS.map(o=>{const t=T[rk(o)]||{};return `<tr><td class="rung">${fmtO(o)}</td><td>${t.shot?'✓':''}</td><td>${esc(t.notes||'')}${t.inc?` <span class="muted">(inc ${esc(t.inc)})</span>`:''}</td><td>${({ok:'✓ holds',mid:'~ borderline',bad:'✗ breaks'})[t.verdict]||''}</td></tr>`;}).join('')}</tbody></table></div>`;}).join('');
+  return html;
+}
+
+/* ============================================================
+   RENDER + EVENTS
+   ============================================================ */
+function render(focusMain){
+  S.step=Math.max(0,Math.min(STEPS.length-1,S.step|0));
+  document.getElementById('nav').innerHTML=STEPS.map((s,i)=>{let d=false;try{d=s.done();}catch(e){}
+    return `<li class="${i===S.step?'on':''}"><button data-act="go" data-arg="${i}" aria-current="${i===S.step?'step':'false'}"><span class="n">${String(i).padStart(2,'0')}</span><span class="t">${esc(s.t)}</span><span class="dot ${d?'done':''}" aria-label="${d?'done':''}"></span></button></li>`;}).join('');
+  const g=S.group.name?`${S.group.name}${S.cam.name?' · '+S.cam.name:''}`:'';
+  document.getElementById('grpLabel').textContent=g;
+  const m=document.getElementById('main');
+  let body; try{ body=STEPS[S.step].f(); }catch(e){ console.error(e); body=`<div class="bad">Something went wrong on this step: ${esc(e.message)}</div>`; }
+  m.innerHTML=body+`<div class="pager noprint">${S.step>0?`<button class="btn" data-act="go" data-arg="${S.step-1}">← ${esc(STEPS[S.step-1].t)}</button>`:'<span></span>'}${S.step<STEPS.length-1?`<button class="btn primary" data-act="go" data-arg="${S.step+1}">${esc(STEPS[S.step+1].t)} →</button>`:''}</div>`;
+  if(focusMain){ window.scrollTo(0,0); m.focus({preventScroll:true}); }
+}
+function readVal(el){
+  if(el.type==='checkbox') return el.checked;
+  if(el.dataset.num){ return el.value===''?'':Number(el.value); }
+  return el.value;
+}
+/* Re-render after a field changes, but never mid-click (a redraw between mousedown
+   and mouseup swallows the click) and keep keyboard focus where the user put it. */
+let ptrDown=false,pending=false;
+document.addEventListener('pointerdown',()=>{ptrDown=true;},true);
+document.addEventListener('pointerup',()=>{ptrDown=false; if(pending){pending=false; setTimeout(softRender,0);} },true);
+function softRender(){
+  const a=document.activeElement, key=a&&a.dataset&&(a.dataset.bind||a.dataset.edit);
+  const y=window.scrollY; render(); window.scrollTo(0,y);
+  if(key){ const el=document.querySelector(`[data-bind="${CSS.escape(key)}"],[data-edit="${CSS.escape(key)}"]`); if(el){ el.focus({preventScroll:true}); if(el.tagName==='INPUT'&&el.type!=='checkbox'){ try{el.select();}catch(e){} } } }
+}
+function scheduleRender(){ if(ptrDown){pending=true;} else setTimeout(softRender,0); }
+document.addEventListener('input',e=>{
+  const el=e.target;
+  if(el.dataset.bind){ setP(el.dataset.bind,readVal(el)); save(); }
+});
+document.addEventListener('change',e=>{
+  const el=e.target;
+  if(el.dataset.bind){
+    setP(el.dataset.bind,readVal(el));
+    if(el.dataset.bind==='N'){ S.N=el.value===''?null:Number(el.value); S.edits={}; }
+    if(el.dataset.bind.startsWith('cam.')||el.dataset.bind.startsWith('base.')) S.edits={};
+    save(); if(el.dataset.r||el.tagName==='SELECT'||el.type==='checkbox') scheduleRender();
+  }else if(el.dataset.edit){
+    const [k,f]=el.dataset.edit.split('.');
+    S.edits[k]=S.edits[k]||{}; S.edits[k][f]=el.value;
+    save(); scheduleRender();
+  }
+});
+const ACTS={
+  go:a=>{S.step=Number(a);S.ui.adding=false;save();render(true);},
+  theme:()=>{const r=document.documentElement;const cur=r.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');r.dataset.theme=cur==='dark'?'light':'dark';try{localStorage.setItem(KEY+'-theme',r.dataset.theme);}catch(e){}},
+  addMember:()=>{if(S.group.members.length<5)S.group.members.push({name:'',role:''});save();render();},
+  rmMember:a=>{S.group.members.splice(Number(a),1);save();render();},
+  prof:a=>{S.ui.profile=Number(a);save();render();},
+  resetLadder:()=>{S.edits={};save();render();},
+  pickImg:()=>document.getElementById('fileImg').click(),
+  rmImg:()=>{if(confirm('Remove the photo? Your readings stay.')){S.map.img=null;S.ui.adding=false;save();render();}},
+  toggleAdd:()=>{S.ui.adding=!S.ui.adding;render();},
+  addMarker:()=>{S.map.markers.push({x:50,y:50,label:nextLabel(),reading:''});save();render();},
+  rmMarker:a=>{S.map.markers.splice(Number(a),1);save();render();},
+  mapRung:a=>{S.map.rung=Number(a);save();render();},
+  ruler:a=>{const pi='p'+curProf();S.analysis[pi]=S.analysis[pi]||{};const r=S.analysis[pi].ruler=S.analysis[pi].ruler||[];r[Number(a)]=!r[Number(a)];save();render();},
+  useRule:a=>{const r=suggestRules()[Number(a)];S.rules=S.rules||[];if(!S.rules.includes(r))S.rules.push(r);save();render();},
+  addRule:()=>{S.rules=S.rules||[];S.rules.push('');save();render();},
+  rmRule:a=>{S.rules.splice(Number(a),1);save();render();},
+  print:()=>window.print(),
+  export:()=>{const blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=`FILM393-${(S.group.name||'group').replace(/[^\w-]+/g,'_')}-exposure-test.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);},
+  import:()=>document.getElementById('fileImport').click(),
+  newGroup:()=>{if(confirm('Start over with a blank group? Export first if you want to keep this one.')){S=fresh();save();render(true);}},
+};
+function nextLabel(){ const used=new Set(S.map.markers.map(m=>m.label)); return MK_LABELS.find(l=>!used.has(l))||'Other'; }
+document.addEventListener('click',e=>{
+  const img=e.target.closest('#mapBox');
+  if(img&&S.ui.adding){
+    const r=document.getElementById('mapImg').getBoundingClientRect();
+    const x=Math.max(0,Math.min(100,(e.clientX-r.left)/r.width*100)), y=Math.max(0,Math.min(100,(e.clientY-r.top)/r.height*100));
+    S.map.markers.push({x:Math.round(x*10)/10,y:Math.round(y*10)/10,label:nextLabel(),reading:''});
+    S.ui.adding=false; save(); render();
+    const ins=document.querySelectorAll('[data-bind$=".reading"]'); if(ins.length) ins[ins.length-1].focus();
+    return;
+  }
+  const b=e.target.closest('[data-act]'); if(!b) return;
+  const f=ACTS[b.dataset.act]; if(f){ e.preventDefault(); f(b.dataset.arg); }
+});
+document.getElementById('fileImport').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return; const rd=new FileReader();
+  rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(!d||!d.cam) throw new Error('not a lab file'); S=merge(fresh(),d); save(); render(true); alert('Imported '+(S.group.name||'group file')+'.'); }catch(err){ alert('That file couldn’t be read: '+err.message); } };
+  rd.readAsText(f); e.target.value='';
+});
+document.getElementById('fileImg').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return; const rd=new FileReader();
+  rd.onload=()=>{ const im=new Image(); im.onload=()=>{ const max=1400, sc=Math.min(1,max/Math.max(im.width,im.height)); const cv=document.createElement('canvas'); cv.width=Math.round(im.width*sc); cv.height=Math.round(im.height*sc); cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height); S.map.img=cv.toDataURL('image/jpeg',0.8); S.ui.adding=true; save(); render(); }; im.onerror=()=>alert('That image couldn’t be opened. Try a JPG or PNG.'); im.src=rd.result; };
+  rd.readAsDataURL(f); e.target.value='';
+});
+try{ const th=localStorage.getItem(KEY+'-theme'); if(th) document.documentElement.dataset.theme=th; }catch(e){}
+load(); render();
+</script>
+</body>
+</html>
