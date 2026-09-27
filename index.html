@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Over/Under Test Lab</title>
+<title>Over/Under Test Planner</title>
 <meta name="description" content="FILM 393 · Step-by-step designer for the over/under exposure test: build your ladder, meter it, log it, analyze it.">
 <style>
 :root{
@@ -189,7 +189,7 @@ dialog#gloss dd{margin:3px 0 0;color:var(--muted)}
 </head>
 <body>
 <header class="top">
-  <div class="brand">FILM 393 · <b>Over/Under</b> Test Lab</div>
+  <div class="brand">FILM 393 · <b>Over/Under</b> Test Planner</div>
   <div class="grp" id="grpLabel"></div>
   <button class="btn small noprint" data-act="gloss">Word list</button>
 </header>
@@ -524,7 +524,8 @@ const WORDS={
   single:['Single / double scrim','Scrim bags are color-coded: a double usually has a red rim and cuts about 1 stop. A single usually has a green rim and cuts about ½ stop. Real scrims vary a little, so you check each one with the meter.'],
   scrim:['Scrim','A wire-mesh screen that slides into the front of a light. A double cuts about 1 stop and a single about ½ stop. Scrims make the light dimmer without changing its color or direction.'],
   dimmer:['Dimmer','Turning the power down. On a tungsten light this makes the light more orange, which adds a second change to the test. We don’t use it.'],
-  bead:['Bead board','A white foam board you bounce light off to make it softer.'],
+  bead:['Bead board','A white foam board you can bounce light off to make it softer.'],
+  solid:['Solid (flag)','A black cloth on a metal frame, set on a stand, that blocks light from hitting part of the set or the lens.'],
   kelvin:['Kelvin (K) / white balance','Kelvin is the color of light. Tungsten is about 3200K. White balance tells the camera that color, so white looks white. We lock it so it can’t change.'],
   meter:['Light meter (Sekonic Speedmaster)','A handheld tool that measures light and tells you which T-stop gives a correct exposure for the settings you type in.'],
   incident:['Incident reading','Holding the meter at the actor with its white dome pointed at the camera. It measures the light arriving at the actor.'],
@@ -534,7 +535,7 @@ const WORDS={
   ire:['IRE','The units on the waveform’s 0–100 brightness scale. A grey card lit correctly sits around 40–45 IRE.'],
   clip:['Clip / clipping','When something is too bright for the sensor, it records as flat white and the detail is gone forever. On the waveform it looks like a flat line at the top.'],
   noise:['Noise / noise floor','The grainy, crawling speckle in dark areas. The noise floor is the point where shadows turn into nothing but noise.'],
-  dr:['Dynamic range','How many stops the sensor can record between clipping and the noise floor. The manufacturer measures this in a lab.'],
+  dr:['Dynamic range','How many stops the sensor can record between clipping and the noise floor. The manufacturer measures this on a test chart.'],
   latitude:['Latitude','How many stops over and under N you can shoot and still fix in color grading. This is what your test measures, and it’s your judgment, so say what standard you used.'],
   profile:['Recording profile','The “look curve” the camera records with. Rec709 looks like normal TV and is ready to watch. Log profiles (S-Log, Canon Log, LogC…) look flat and grey but save more range for color grading.'],
   grade:['Color grading / colorist','Adjusting brightness and color after the shoot. The colorist is the person who does it.'],
@@ -608,13 +609,13 @@ function stepGroup(){
   const m=S.group.members, n=m.length, named=m.filter(x=>String(x.name||'').trim()).length;
   return head(0,'Design your <em>over/under</em> test.','In this test you record the same shot 15 times. Each take is a little brighter (“over”) or darker (“under”) than normal. Then you study where the picture falls apart. The result tells you exactly how much room your camera gives you on a real set.')+
   now('Setting up your group: who’s in it and who does which job on test day.','Fifteen takes per profile go fast, and one wrong setting nobody noticed ruins the whole test. When every job has one owner, mistakes get caught.','your group has a name and every member has a job.')+
-  `<div class="card key"><span class="label">How this lab works</span>
+  `<div class="card key"><span class="label">How this planner works</span>
    <ol class="steps-list">
-     <li><div><b>Plan it (steps 1–4).</b> Enter your camera and lens and pick your normal stop (N). The lab does the math and builds your ladder of 15 takes. You check every row.</div></li>
+     <li><div><b>Plan it (steps 1–4).</b> Enter your camera and lens and pick your normal stop (N). The planner does the math and builds your ladder of 15 takes. You check every row.</div></li>
      <li><div><b>Shoot it (steps 5–7).</b> Use the light meter to set the light, measure your frame, then record and log all 15 takes.</div></li>
      <li><div><b>Study it (steps 8–12).</b> Review the footage two ways, compare recording profiles, write rules for your crew, and print everything as your packet.</div></li>
    </ol>
-   <div class="row noprint" style="margin:0 0 12px"><a class="hint" href="guide.html#students" target="_blank" rel="noopener">How to use this lab ↗</a></div>
+   <div class="row noprint" style="margin:0 0 12px"><a class="hint" href="guide.html#students" target="_blank" rel="noopener">How to use this planner ↗</a></div>
    <p style="margin:0 0 10px"><span class="fill-key"></span><b>Yellow boxes are waiting for you to fill them in.</b> They turn white once they have an answer.</p>
    <p class="hint" style="margin:0">Every step starts with a <b>“What are we doing now?”</b> box. Any word you don’t know is in <b>Words on this page</b>, or in the <b>Word list</b> button at the top. Your work saves automatically <b>in this browser on this computer</b>. To move it to a teammate’s laptop, use <b>Export group file</b> on the last step.</p></div>
    <h2>Who’s in the group?</h2>
@@ -640,13 +641,13 @@ const QUIZ={
   noise:{q:'Grainy noise in the shadows',a:'d',why:'Dependent.'},
   prof:{q:'The recording profile, inside one ladder',a:'c',why:'Controlled inside a ladder. Across ladders, it becomes the thing you compare (step 10).'},
 };
-const APPARATUS=['Camera + one wide-ish cinema prime lens close to the focal length of your master shots','Tungsten key light with its scrim bag (doubles + singles), bounced into a bead board','One small tungsten light to separate the background','Sekonic Speedmaster light meter: white dome for incident readings + 1° spot viewfinder','18% grey card + color chart','Calibrated monitor with a waveform','Stand-in whose skin tone matches your actors, wearing the real costume','Key fabrics in the frame to show texture','Slate + markers big enough to read in a small thumbnail','Tape measure + camera tape for marks'];
+const APPARATUS=['Camera + one wide-ish cinema prime lens close to the focal length of your master shots','Tungsten lighting kit: the lights your group chooses for its lighting design, each with its scrim bag (doubles and singles)','Bead board, solids and grip stands to shape your light','Sekonic Speedmaster light meter: white dome for incident readings + 1° spot viewfinder','18% grey card + color chart','Calibrated monitor with a waveform','Stand-in whose skin tone matches your actors, wearing the real costume','Slate + markers big enough to read in a small thumbnail','Tape measure + camera tape for marks','Optional: key costume fabrics in the frame to show texture'];
 function stepExperiment(){
   const opts=[['','Choose…'],['c','Controlled: locked, never changes'],['i','Independent: the one thing we change'],['d','Dependent: what we watch']];
   const answered=Object.keys(QUIZ).filter(k=>S.quiz[k]).length, right=Object.keys(QUIZ).filter(k=>S.quiz[k]===QUIZ[k].a).length;
   return head(1,'This is an <em>experiment.</em>','Like any science experiment: change one thing, keep everything else exactly the same, and watch what happens. If two things change at once, you can’t tell which one caused what you see.')+
   now('Learning the rules of a fair test and checking you have all the equipment.','Your test is only useful if the <b>only</b> thing changing between takes is exposure. Anything else that moves (a light, a setting, the weather) ruins the results.','you get every quiz item right and every piece of equipment is checked off.')+
-  `<div class="card soft"><span class="label">Why we test</span><p style="margin:0">A camera’s spec sheet tells you its <b>dynamic range</b>, measured in a lab on a test chart. But you shoot faces, fabric and lamps, through <em>your</em> lens, into <em>your</em> color grade. What matters is your <b>usable range</b> in that whole chain, and nobody can measure that for you. This test gives you the number: your <b>latitude</b>.</p></div>
+  `<div class="card soft"><span class="label">Why we test</span><p style="margin:0">A camera’s spec sheet tells you its <b>dynamic range</b>, measured by the manufacturer on a test chart. But you shoot faces, fabric and lamps, through <em>your</em> lens, into <em>your</em> color grade. What matters is your <b>usable range</b> in that whole chain, and nobody can measure that for you. This test gives you the number: your <b>latitude</b>.</p></div>
   <div class="grid3">
     <div class="card soft"><span class="label">Controlled · locked</span>White balance, lens focal length, the light’s position, the stand-in, Exposure Index, recording profile. If it isn’t the thing you’re testing, it doesn’t move.</div>
     <div class="card key"><span class="label">Independent · the one thing we change</span>How far each take is from N. You step it from <b>N+5</b> (5 stops brighter) down to <b>N−5</b> (5 stops darker) in exact steps.</div>
@@ -657,16 +658,17 @@ function stepExperiment(){
   <div class="card">${Object.entries(QUIZ).map(([k,v])=>{const a=S.quiz[k];return `<div class="quiz-item"><div>${esc(v.q)}</div>${sel('quiz.'+k,opts)}${a?`<div class="quiz-fb ${a===v.a?'right':'wrong'}">${a===v.a?'✓ Right. ':'✗ Not quite. '}${esc(v.why)}</div>`:''}</div>`;}).join('')}</div>
   ${answered===Object.keys(QUIZ).length&&right<answered?'<div class="warn">Fix the ✗ answers before test day. Those are exactly the mistakes that ruin a test.</div>':''}
   <h2>Equipment checklist</h2>
+  <p>You design your own lighting for this test. Choose the lights and how you shape them. The only rules: <b>tungsten lights only</b>, change brightness with <b>scrims</b> (never a dimmer), and once N is set, <b>the lights don’t move</b>.</p>
   <div class="card">${APPARATUS.map((a,i)=>chk('apparatus.a'+i,esc(a))).join('')}</div>
   ${why('The golden rule',`<p style="margin:0">If something you meant to keep the same changed during the test (a cloud, a dimmer, an automatic camera setting, someone bumping a light stand), the test is spoiled. <b>Stop, lock everything again, and reshoot.</b></p>`)}
-  ${words(['variables','dr','latitude','tungsten','scrim','dimmer','bead','meter','grey','waveform','standin'])}`;
+  ${words(['variables','dr','latitude','tungsten','scrim','dimmer','bead','solid','meter','grey','waveform','standin'])}`;
 }
 
 /* ---------- STEP 2 · CAMERA ---------- */
 function stepCamera(){
   const c=S.cam, speed=c.shutterMode==='speed';
-  return head(2,'Your camera, <em>your</em> lens.','Every camera is different, so the lab needs to know what yours can actually do. Have the camera on and its menus open while you fill this in.')+
-  now('Telling the lab your camera’s settings and limits, your lens, and your lights.','The lab uses these limits to build a ladder of 15 takes your camera can really shoot. Wrong limits give you a plan that won’t work on the day.','every field is filled in from the real camera, lens and scrim bag, not from memory. Each question has a <b>“How do I find this?”</b> link: click it before asking for help.')+
+  return head(2,'Your camera, <em>your</em> lens.','Every camera is different, so the planner needs to know what yours can actually do. Have the camera on and its menus open while you fill this in.')+
+  now('Telling the planner your camera’s settings and limits, your lens, and your lights.','The planner uses these limits to build a ladder of 15 takes your camera can really shoot. Wrong limits give you a plan that won’t work on the day.','every field is filled in from the real camera, lens and scrim bag, not from memory. Each question has a <b>“How do I find this?”</b> link: click it before asking for help.')+
   `<h2>Camera</h2>
   <div class="grid2">
     ${field('Camera model',inp('cam.name',{ph:'Example: Sony FX6',r:true}))}
@@ -683,7 +685,7 @@ function stepCamera(){
   </div>
   ${speed?'':(c.angleMode==='any'?`<div class="grid2">${field('Smallest angle it allows',inp('cam.minA',{type:'number',ph:'11.25',r:true}),'Turn the angle down as far as it goes and type that number.')}<div class="field"><span>Largest angle</span><div class="big-num" style="font-size:32px">360°</div><small>360° is always the maximum: the shutter is open for the whole frame.</small></div></div>`
   :`<div class="card soft">${field('Every shutter angle on your camera’s list',inp('cam.angles',{ph:'Example: 11.25, 22.5, 45, 90, 144, 172.8, 180, 360',r:true}),'Type every value, separated by commas. 360° is always the largest.')}
-    ${how('How do I find every angle? (do this with the camera on)',`<ol><li>Set the camera to shutter <b>angle</b> mode.</li><li>Turn the shutter angle down until it won’t go any lower. Write that number down.</li><li>Now click up <b>one step at a time</b>, writing down every value you see, until you reach the top.</li><li>Type the whole list here. The lab will only plan takes with angles that are on this list.</li></ol><p style="margin:0">Tip: the angles that matter most are the “doubling chain”: 11.25 → 22.5 → 45 → 90 → 180 → 360. Each step in that chain is exactly 1 stop.</p>`)}
+    ${how('How do I find every angle? (do this with the camera on)',`<ol><li>Set the camera to shutter <b>angle</b> mode.</li><li>Turn the shutter angle down until it won’t go any lower. Write that number down.</li><li>Now click up <b>one step at a time</b>, writing down every value you see, until you reach the top.</li><li>Type the whole list here. The planner will only plan takes with angles that are on this list.</li></ol><p style="margin:0">Tip: the angles that matter most are the “doubling chain”: 11.25 → 22.5 → 45 → 90 → 180 → 360. Each step in that chain is exactly 1 stop.</p>`)}
     ${(()=>{const L=angleList(c);if(!L.length) return '<p class="hint" style="margin:0">No angles entered yet.</p>';
        const chain=[11.25,22.5,45,90,180,360].map(a=>`<span class="pill ${L.some(x=>Math.abs(x-a)<0.01)?'ok':'neutral'}">${a}°${L.some(x=>Math.abs(x-a)<0.01)?' ✓':' missing'}</span>`).join(' ');
        return `<p style="margin:10px 0 4px"><b>Your list:</b> ${L.map(a=>a+'°').join(', ')}${L[L.length-1]<360-EPS?' <span class="pill warn">360° is missing: check the top of the menu again</span>':''}</p><p class="hint" style="margin:0">Doubling chain (1 stop apart): ${chain}</p>`;})()}
@@ -691,7 +693,7 @@ function stepCamera(){
   <h2>Frame rate</h2>
   <div class="grid2">
     ${field('Normal frame rate (frames per second)',sel('cam.fps',[['24','24'],['23.976','23.976'],['25','25'],['30','30']],{num:true}),'The frame rate you’ll shoot N at. 23.976 and 24 work the same for this math.')}
-    ${field('Lowest frame rate the sensor can record',inp('cam.minF',{type:'number',ph:'6',r:true}),'How few frames per second the camera can really capture.'+how('How do I find the lowest frame rate?',`<ol><li>Look in the menu for a slow-motion or variable frame rate setting. Common names: <b>S&Q</b> (slow and quick), <b>Slow & Fast Motion</b>, <b>Off-speed</b>, <b>Variable Frame Rate</b>, <b>Sensor Frame Rate</b> or <b>Project vs. Sensor FPS</b>.</li><li>Turn it on and lower the frame rate until it won’t go lower. That number is your answer.</li><li>Make sure it’s the <b>sensor</b> frame rate (frames actually captured), not the project or playback rate. If the screen shows both, use the sensor/record one.</li><li>If your camera has <b>no</b> such setting, type your normal frame rate (24). The lab will just not use frame rate.</li><li>Turn the setting back off when you’re done.</li></ol>`))}
+    ${field('Lowest frame rate the sensor can record',inp('cam.minF',{type:'number',ph:'6',r:true}),'How few frames per second the camera can really capture.'+how('How do I find the lowest frame rate?',`<ol><li>Look in the menu for a slow-motion or variable frame rate setting. Common names: <b>S&Q</b> (slow and quick), <b>Slow & Fast Motion</b>, <b>Off-speed</b>, <b>Variable Frame Rate</b>, <b>Sensor Frame Rate</b> or <b>Project vs. Sensor FPS</b>.</li><li>Turn it on and lower the frame rate until it won’t go lower. That number is your answer.</li><li>Make sure it’s the <b>sensor</b> frame rate (frames actually captured), not the project or playback rate. If the screen shows both, use the sensor/record one.</li><li>If your camera has <b>no</b> such setting, type your normal frame rate (24). The planner will just not use frame rate.</li><li>Turn the setting back off when you’re done.</li></ol>`))}
     ${field('Highest frame rate the sensor can record',inp('cam.maxF',{type:'number',ph:'60',r:true}),how('How do I find it?',`<ol><li>Same menu as above: raise the frame rate until it stops.</li><li>Some cameras need a smaller resolution for high frame rates. Use the highest number available <b>at the resolution you’re testing</b>.</li></ol>`))}
   </div>
   <h2>Lens</h2>
@@ -708,7 +710,7 @@ function stepCamera(){
     ${field('Extra light available (in stops)',inp('cam.headroom',{type:'number',ph:'3',r:true}),'How much brighter than a “normal” setup (180° shutter, no scrims) your tungsten key can get at the actor.'+how('How do I measure this? (5 minutes with the meter)',`<ol><li>Set the meter to your Exposure Index, ${fmtFps(Number(c.fps)||24)} frames per second and <b>180°</b>.</li><li>Put the light where you’d like it and take a dome reading at the actor’s face with no scrims. Write it down (for example T2.8).</li><li>Now make the light as bright as you can at the actor without changing its look much: focus (spot) the beam, or move it a little closer. Take another reading (for example T5.6).</li><li>Count the full stops between the two readings. T2.8 → T4 → T5.6 is <b>2</b>. That’s your extra light.</li><li>Still short? A bigger light (a 2,000-watt instead of a 1,000-watt) usually adds about 1 stop.</li></ol>`))}
     ${field('How long each take should play back (seconds)',inp('cam.playSec',{type:'number',ph:'10',r:true}),'Every take plays back for this long. Takes at a slower frame rate must record longer: at 6 frames per second, 10 seconds of playback means recording for 40.')}
   </div>
-  <div class="warn"><b>No ND filters, and leave the lens alone.</b> This test changes exposure only with shutter angle, frame rate and scrims. An ND filter or a lens change would add another variable (and the lens changes depth of field). The lab only moves the lens if nothing else can reach a take, and it marks that take with ⚠︎.</div>
+  <div class="warn"><b>No ND filters, and leave the lens alone.</b> This test changes exposure only with shutter angle, frame rate and scrims. An ND filter or a lens change would add another variable (and the lens changes depth of field). The planner only moves the lens if nothing else can reach a take, and it marks that take with ⚠︎.</div>
   ${why('Why tungsten and scrims',`<p>A scrim is a wire-mesh screen in front of the lamp. It makes the light dimmer and changes nothing else: the direction, softness and color all stay the same. A <b>double</b> cuts about 1 stop and a <b>single</b> about ½ stop.</p><p style="margin:0">Don’t use a dimmer: dimming tungsten makes it more orange, so skin would get warmer as it gets darker, and then two things changed. Don’t move the light either: moving it changes contrast.</p>`)}
   ${words(['ei','profile','kelvin','shutter','speed','fps','sensorfps','tstop','scrim','single','nd','dimmer','stop'])}`;
 }
@@ -739,7 +741,7 @@ function stepLadder(){
   const candA=baseCandidates(p);
   const shutHead=p.speed?'Shutter speed (1/x of a second)':'Shutter angle';
   const irisOpts=[]; for(let s=p.sN-6;s<=p.sN+6+EPS;s+=0.5){ if(s>=p.sWide-EPS&&s<=p.sDeep+EPS) irisOpts.push([String(s),irisLabel(s,p.sN)]); }
-  return head(4,'Build the <em>exposure ladder.</em>','The light never moves. To make each take brighter or darker, you change the <b>camera</b> (shutter angle, frame rate) and add or pull <b>scrims</b>. The lens stays at N, and there are no ND filters. The lab plans all 15 takes; your job is to check them.')+
+  return head(4,'Build the <em>exposure ladder.</em>','The light never moves. To make each take brighter or darker, you change the <b>camera</b> (shutter angle, frame rate) and add or pull <b>scrims</b>. The lens stays at N, and there are no ND filters. The planner works out all 15 takes; your job is to check them.')+
   now('Planning the exact settings for all 15 takes, from N+5 (5 stops brighter) down to N−5 (5 stops darker).','If even one take lands on the wrong exposure, your results will point to the wrong limits. Checking the math now is much cheaper than reshooting.','every row shows a green ✓ and your group understands how each row gets its exposure (the small grey line under each ✓).')+
   `<div class="card soft"><span class="label">All the math you need</span>
     <div class="grid2">
@@ -758,10 +760,10 @@ function stepLadder(){
     ${light>p.headroom+EPS?`<div class="bad">These starting settings need more light than the ${fmtStops(p.headroom,false)} stops of extra light you listed on the Camera step.</div>`:''}
     ${light>0.01?`<div class="warn" style="margin-bottom:0"><b>Light needed:</b> this setup needs <b>${fmtStops(light,false)} stop${light>1.01?'s':''} more light</b> than a normal 180° setup with no scrims. That’s <b>${Math.round(Math.pow(2,light)*10)/10}× as much light</b>. Pick a tungsten light that can get there, and set how far away it is and how focused its beam is <em>before</em> you lock it. If it can’t reach N, lower “Extra light available” on the Camera step.</div>`:''}
     <div class="row noprint" style="margin-top:14px">
-      <label class="check" style="border:0;padding:0"><input type="checkbox" data-bind="base.auto" data-r="1" ${S.base.auto?'checked':''}><span>Use the lab’s recommended starting settings</span></label>
+      <label class="check" style="border:0;padding:0"><input type="checkbox" data-bind="base.auto" data-r="1" ${S.base.auto?'checked':''}><span>Use the planner’s recommended starting settings</span></label>
       ${S.base.auto?'':`${sel('base.A0',candA.map(a=>[String(a),(p.speed?fmtDen(360*p.F0/a):fmtAng(a))+' at N']),{num:true,cls:'sm'})}${sel('base.D0',Array.from({length:p.Dmax+1},(_,i)=>[String(i),i+' double scrim'+(i===1?'':'s')+' in at N']),{num:true,cls:'sm'})}${p.Gmax?sel('base.G0',Array.from({length:Math.min(1,p.Gmax)+1},(_,i)=>[String(i),i+' single scrim'+(i===1?'':'s')+' in at N']),{num:true,cls:'sm'}):''}`}
     </div>
-    <p class="hint" style="margin:6px 0 0">${S.base.auto?'The lab tried every starting shutter angle and scrim combination your camera allows and picked the one that keeps the lens at N and needs the fewest frame-rate changes, without needing more light than you have. Uncheck the box to choose your own starting settings, for example to match what your Director of Photography wants at N.':'You’re choosing the starting settings yourself. The table below re-plans every take from them. Check the box again to go back to the lab’s recommendation.'}</p>
+    <p class="hint" style="margin:6px 0 0">${S.base.auto?'The planner tried every starting shutter angle and scrim combination your camera allows and picked the one that keeps the lens at N and needs the fewest frame-rate changes, without needing more light than you have. Uncheck the box to choose your own starting settings, for example to match what your Director of Photography wants at N.':'You’re choosing the starting settings yourself. The table below re-plans every take from them. Check the box again to go back to the planner’s recommendation.'}</p>
     <p class="hint" style="margin:8px 0 0">${fpsRows?`${fpsRows} take${fpsRows>1?'s change':' changes'} the frame rate. Motion will look different in ${fpsRows>1?'those takes':'that take'}, and that’s fine: you’re judging brightness and texture, not movement. `:'No takes change the frame rate. '}${irisAny?`<b>⚠︎ ${irisAny} take${irisAny>1?'s':''} had to move the lens</b>, because nothing else could reach ${irisAny>1?'them':'it'}. That changes depth of field. Try adding scrims or widening the frame-rate range on the Camera step, or ask your instructor.`:'The lens stays at N for every take.'}</p>
   </div>
   <h2>Your 15 takes</h2>
@@ -784,9 +786,9 @@ function stepLadder(){
         <td>${verdict}<div class="how">${esc(r.how)}</div></td>
         <td class="meter">${r.scrimChange?`After changing scrims, a dome reading at the actor should say <b>${fmtT(r.incident)}</b>.<br>`:''}Meter set to ${fmtFps(r.F)} frames/sec and ${p.speed?fmtDen(r.den):fmtAng(r.angle)} → says <b>${fmtT(r.meterRec)}</b>. Lens is at ${esc(irisLabel(r.s,p.sN))}.</td>
       </tr>`;}).join('')}</tbody></table></div>
-  <div class="row noprint"><button class="btn small" data-act="resetLadder">Undo my changes: go back to the lab’s plan</button>${Object.keys(S.edits).length?'<span class="hint">You’ve changed some settings by hand.</span>':''}</div>
+  <div class="row noprint"><button class="btn small" data-act="resetLadder">Undo my changes: go back to the planner’s suggestion</button>${Object.keys(S.edits).length?'<span class="hint">You’ve changed some settings by hand.</span>':''}</div>
   <p class="hint">A meter number below T1 (like “T0.7”) is just the math going past the end of the meter’s scale. The meter will show it as “under”, meaning very dark. That’s expected for the darkest takes.</p>
-  ${why('How to read “Prove it with the meter”',`<p>This is how you <b>prove</b> each take is right with the Speedmaster. Type that row’s frame rate and shutter angle into the meter (same Exposure Index) and take a dome reading at the actor. The meter tells you which T-stop would be a <em>normal</em> exposure at those settings. Compare that to where the lens actually is:</p><p><b>The meter says T5.6 but the lens is at T2.8, so the lens is 2 stops more open than normal. That’s N+2.</b></p><p style="margin:0">For takes where scrims go in or out, first check that the dome reading changed by the amount you expected. Real scrims aren’t perfect: a “double” can really be ¾ or 1¼ stops. If it’s off, type the real reading on the Shoot step and the lab corrects that take.</p>`)}
+  ${why('How to read “Prove it with the meter”',`<p>This is how you <b>prove</b> each take is right with the Speedmaster. Type that row’s frame rate and shutter angle into the meter (same Exposure Index) and take a dome reading at the actor. The meter tells you which T-stop would be a <em>normal</em> exposure at those settings. Compare that to where the lens actually is:</p><p><b>The meter says T5.6 but the lens is at T2.8, so the lens is 2 stops more open than normal. That’s N+2.</b></p><p style="margin:0">For takes where scrims go in or out, first check that the dome reading changed by the amount you expected. Real scrims aren’t perfect: a “double” can really be ¾ or 1¼ stops. If it’s off, type the real reading on the Shoot step and the planner corrects that take.</p>`)}
   ${why('Why half-stops only near N',`<p style="margin:0">The most interesting changes happen within a stop and a half of N: where skin looks best, and where it starts to go wrong. Past ±2 stops you’re only finding the walls, so whole stops are enough.</p>`)}
 
   ${words(['ladder','rung','N','stop','shutter','fps','scrim','tstop','split','dof','incident','meter'])}`;
@@ -819,7 +821,7 @@ function stepMeter(){
     <li><div><b>Put ${scrimTxt} in the key light</b> before you meter.${base.D0||base.G0?' They’re part of N: pulling them out later is how you make the brighter takes.':''}</div></li>
     <li><div><b>Take a dome (incident) reading at the stand-in’s nose</b>, with the white dome pointed at the camera lens. It measures the light arriving at the face, not the light bouncing off it.</div></li>
     <li><div><b>Move the lamp until the meter says exactly ${fmtT(p.sN)}.</b> Focus or spread its beam, or move it closer or farther. <b>Don’t</b> use a dimmer (tungsten turns orange) and <b>don’t</b> touch the lens. Leave yourself room: if the light is already at full power and fully focused just to reach N, you have nothing left.</div></li>
-    <li><div><b>Frame the shot</b> so the stand-in, grey card, color chart and costume fabrics are all clearly visible in the same frame.</div></li>
+    <li><div><b>Frame the shot</b> so the stand-in, grey card and color chart are all clearly visible in the same frame (plus any costume fabrics you chose to include).</div></li>
     <li><div><b>Lock everything.</b> Tape the stand, the beam knob and the lamp head. Measure the distance from the light to the actor and write it down.</div></li>
     <li><div><b>Set the camera to match:</b> lens ${fmtT(p.sN)} · shutter ${baseShut} · ${fmtFps(p.F0)} frames per second · Exposure Index ${esc(c.ei||'—')} · white balance ${esc(c.wb||3200)}K · ND filter out · every automatic setting off. Write each setting on the slate.</div></li>
     <li><div><b>Check it on the waveform.</b> The grey card should sit around <b>40–45 IRE</b>. Log profiles put it a little lower, about 38–42. <b>The meter sets N and the waveform just confirms it.</b> If the card is way off, re-check the meter’s frame rate, shutter and ISO before you touch the light.</div></li>
@@ -852,8 +854,8 @@ function stepMap(){
   const M=S.map, rung=Number(M.rung)||0;
   const ms=M.markers.map((m,i)=>({...m,i,s:parseReading(m.reading)}));
   const valid=ms.filter(m=>m.s!=null);
-  return head(6,'Map your <em>frame.</em>','Before you record, measure how bright each important thing in the shot is: skin, fabric, background, the brightest spot, the darkest shadow. Pin each reading on a photo of your frame and you’ll see where everything lands in every take.')+
-  now('Taking spot-meter readings of the important parts of your frame and pinning them on a photo.','When you review, you’ll know <em>why</em> something broke. For example: “the lamp was already 3 stops over N, so at N+2 it clipped.”','you have readings for at least the grey card, the skin (key and fill sides), a fabric, the brightest spot and the darkest shadow you care about.')+
+  return head(6,'Map your <em>frame.</em>','Before you record, measure how bright each important thing in the shot is: skin, background, the brightest spot, the darkest shadow, and fabric if you have it in frame. Pin each reading on a photo of your frame and you’ll see where everything lands in every take.')+
+  now('Taking spot-meter readings of the important parts of your frame and pinning them on a photo.','When you review, you’ll know <em>why</em> something broke. For example: “the lamp was already 3 stops over N, so at N+2 it clipped.”','you have readings for at least the grey card, the skin (key and fill sides), the brightest spot and the darkest shadow you care about. Add fabric too if it’s in your frame.')+
   `${why('What a spot reading tells you',`<p>With the 1° spot viewfinder (same meter settings as N), aim at one surface and press measure. The number is the T-stop that would make <em>that surface</em> look like middle grey. If N is ${fmtT(p.sN)} and the skin reads ${fmtT(p.sN+1)}, the skin is <b>1 stop brighter than grey: N+1</b>.</p><p style="margin:0">Then the ladder moves everything together. In the N+2 take, that same skin sits at <b>N+3</b>. Click the take buttons below to see it.</p>`)}
   <div class="row noprint">
     <button class="btn" data-act="pickImg">${M.img?'Replace photo':'Add a photo of your frame'}</button>
@@ -908,7 +910,7 @@ function stepShoot(){
   `<h2>Before the first take</h2><div class="card">${cl.map((t,i)=>chk(`checklist.${pi}_${i}`,t)).join('')}</div>
   <div class="card soft"><span class="label">Write down before rolling</span><p style="margin:0" class="mono">N ${fmtT(p.sN)} · Exposure Index ${esc(S.cam.ei)} · distance ${esc(S.setup.dist||'—')} · light ${esc(S.setup.fixture||'—')} · profile ${esc(profiles()[curProf()])}</p><p class="hint" style="margin:6px 0 0">(From the Meter step. Fill in any blanks there.)</p></div>
   <h2>Take log <span class="pill ${done===RUNGS.length?'ok':'neutral'}">${done} of ${RUNGS.length} recorded</span></h2>
-  <p class="hint">Settings come from your ladder. On takes where scrims change, take a dome reading. If it isn’t what you expected, type the real reading and the lab works out where that take really landed.</p>
+  <p class="hint">Settings come from your ladder. On takes where scrims change, take a dome reading. If it isn’t what you expected, type the real reading and the planner works out where that take really landed.</p>
   <div class="tbl-wrap"><table>
    <thead><tr><th>Take #</th><th>Take · what to write on the slate</th><th>Record for</th><th>Recorded?</th><th>Dome reading after scrim change</th><th>What the waveform showed</th><th>Verdict</th></tr></thead>
    <tbody>${rows.map((r,i)=>{
@@ -942,7 +944,7 @@ function stepOneLight(){
   </ol>
   <div class="card"><span class="label">One-light analysis</span><div class="grid2">
     ${field('Skin loses detail or warmth at',sel(base+'.skin',rungOpts(1),{r:false}))}
-    ${field('Fabrics stop showing texture at',sel(base+'.fabric',rungOpts(1),{r:false}))}
+    ${field('Fabrics stop showing texture at (optional: only if you had fabrics in frame)',sel(base+'.fabric',rungOpts(1),{r:false}))}
     ${field('Last take where bright areas still look acceptable',sel(base+'.hi',rungOpts(1)))}
     ${field('Shadows crush (turn to solid black or noise) at',sel(base+'.crush',rungOpts(-1)))}
     ${field('Most flattering darker take',sel(base+'.flatter',rungOpts(-1),{r:false}))}
@@ -1042,7 +1044,7 @@ function stepRules(){
    ${suggestRules().map((r,i)=>`<div class="row" style="justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)"><span>${esc(r)}</span><button class="btn small noprint" data-act="useRule" data-arg="${i}">Use this</button></div>`).join('')||'<p class="muted" style="margin:0">Finish steps 8–10 to get suggestions.</p>'}
   </div>
   <h2>My on-set rules</h2>
-  <p class="hint">Patterns that work: “Never place skin above N+__.” · “Below N−__, add light instead of raising the Exposure Index.” · “Use profile __ for day exteriors.” The lab flags rules with no number, or with describing words like “too bright” that nobody can check.</p>
+  <p class="hint">Patterns that work: “Never place skin above N+__.” · “Below N−__, add light instead of raising the Exposure Index.” · “Use profile __ for day exteriors.” The planner flags rules with no number, or with describing words like “too bright” that nobody can check.</p>
   ${rules.map((r,i)=>{const hasNum=/N\s*[+−-]|\d/.test(r||'');const vague=VAGUE.test(r||'');
     return `<div style="margin:10px 0"><div class="row" style="flex-wrap:nowrap"><span class="mono muted">${String(i+1).padStart(2,'0')}</span>${inp('rules.'+i,{r:true})}<button class="btn small ghost" data-act="rmRule" data-arg="${i}" aria-label="Delete rule">✕</button></div>
     ${r?`<div class="lint">${!hasNum?'<span class="pill bad">needs a number</span> ':''}${vague?`<span class="pill warn">describing word: “${esc((r.match(VAGUE)||[''])[0])}”, so replace it with a number</span> `:''}${hasNum&&!vague?'<span class="pill ok">checkable</span>':''}</div>`:''}</div>`;}).join('')}
@@ -1063,7 +1065,7 @@ function stepPacket(){
     <button class="btn" data-act="import">Import group file</button>
     <button class="btn ghost" data-act="newGroup">Start a new group</button>
   </div>
-  <p class="hint noprint">To save a PDF: click Print, then choose “Save as PDF” as the printer. <b>Export group file</b> downloads a small file with all your work. A teammate opens the lab and clicks <b>Import group file</b> to continue on their laptop.</p>
+  <p class="hint noprint">To save a PDF: click Print, then choose “Save as PDF” as the printer. <b>Export group file</b> downloads a small file with all your work. A teammate opens the planner and clicks <b>Import group file</b> to continue on their laptop.</p>
   <div class="card key"><span class="label">FILM 393 · Camera test</span>
     <h2 style="margin-top:0">${esc(g.name||'Group')} <span class="muted" style="font-size:18px">${esc(g.section)} ${esc(g.date)}</span></h2>
     <p style="margin:0">${members||'<span class="muted">No members listed</span>'}</p>
@@ -1176,7 +1178,7 @@ document.addEventListener('click',e=>{
 });
 document.getElementById('fileImport').addEventListener('change',e=>{
   const f=e.target.files[0]; if(!f) return; const rd=new FileReader();
-  rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(!d||!d.cam) throw new Error('not a lab file'); S=merge(fresh(),d); save(); render(true); alert('Imported '+(S.group.name||'group file')+'.'); }catch(err){ alert('That file couldn’t be read: '+err.message); } };
+  rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(!d||!d.cam) throw new Error('this isn’t a group file from the planner'); S=merge(fresh(),d); save(); render(true); alert('Imported '+(S.group.name||'group file')+'.'); }catch(err){ alert('That file couldn’t be read: '+err.message); } };
   rd.readAsText(f); e.target.value='';
 });
 document.getElementById('fileImg').addEventListener('change',e=>{
