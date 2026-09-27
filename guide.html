@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test Lab Guide</title>
+<meta name="description" content="How to run the FILM 393 Over/Under Test Lab: posting it, class-day flow, collecting work, troubleshooting.">
+<style>
+:root{--bg:#f5f2ec;--paper:#fff;--ink:#1d1b18;--muted:#6a655c;--line:#d8d2c6;--soft:#eeeae2;--accent:#a8431d;--blue:#2c5a96;--blue-soft:#dde7f4;--warn:#8a5a00;--warn-soft:#f7ecd0;
+--serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;--sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#151412;--paper:#1f1d1a;--ink:#efebe3;--muted:#a59f93;--line:#3b3832;--soft:#2a2824;--accent:#e57f52;--blue:#86b0e8;--blue-soft:#1c2a3d;--warn:#e0b14a;--warn-soft:#3a2f16}}
+:root[data-theme="dark"]{--bg:#151412;--paper:#1f1d1a;--ink:#efebe3;--muted:#a59f93;--line:#3b3832;--soft:#2a2824;--accent:#e57f52;--blue:#86b0e8;--blue-soft:#1c2a3d;--warn:#e0b14a;--warn-soft:#3a2f16}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 var(--sans)}
+.top{background:var(--paper);border-bottom:2px solid var(--ink);padding:12px 20px;font:600 12px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;display:flex;gap:16px;flex-wrap:wrap}
+.top b{color:var(--accent)}
+.top a{margin-left:auto;color:var(--accent);text-decoration:none}
+main{max-width:820px;margin:0 auto;padding:32px 20px 80px}
+.eyebrow{font:12px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+h1,h2,h3{font-family:var(--serif);font-weight:500;margin:0}
+h1{font-size:42px;line-height:1.05;margin-bottom:12px}
+h1 em{font-style:italic}
+h2{font-size:28px;margin:44px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:20px;margin:22px 0 6px}
+p{margin:0 0 12px}
+a{color:var(--accent)}
+.lead{font-size:19px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:14px 0}
+.key{border:2px solid var(--ink)}
+.why{background:var(--blue-soft);border-left:4px solid var(--blue);border-radius:0 8px 8px 0;padding:12px 16px;margin:14px 0}
+.warn{background:var(--warn-soft);border-left:4px solid var(--warn);border-radius:0 8px 8px 0;padding:12px 16px;margin:14px 0}
+.label{font:11.5px/1.3 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px}
+ol.s{counter-reset:s;list-style:none;padding:0;margin:8px 0}
+ol.s>li{counter-increment:s;display:grid;grid-template-columns:36px 1fr;padding:10px 0;border-bottom:1px solid var(--line)}
+ol.s>li::before{content:counter(s,decimal-leading-zero);font:14px/1.7 var(--mono);color:var(--muted)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;vertical-align:top;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{font:11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);background:var(--soft)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--paper)}
+code,.mono{font-family:var(--mono);font-size:.92em}
+.copy{position:relative;white-space:pre-wrap;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:14px 16px;font:15px/1.55 var(--sans)}
+.btn{font:600 14px var(--sans);border:1.5px solid var(--ink);background:var(--paper);color:var(--ink);border-radius:8px;padding:7px 14px;cursor:pointer}
+.btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.big{display:inline-block;font:600 18px var(--mono);word-break:break-all}
+dt{font-weight:700;margin-top:14px}
+dd{margin:4px 0 0}
+@media (max-width:640px){h1{font-size:32px}h2{font-size:24px}}
+@media print{.top,.btn{display:none}body{background:#fff}}
+</style>
+</head>
+<body>
+<div class="top">FILM 393 · <b>Over/Under</b> Test Lab · Guide <a href="./">Open the lab →</a></div>
+<main>
+<p class="eyebrow">Instructor guide</p>
+<h1>Running the <em>Test Lab.</em></h1>
+<p class="lead">A step-by-step web tool that walks each group through the Camera Testing Handbook. It builds their exposure ladder for their camera, tells them how to meter every rung, and turns results into rules and a printable packet.</p>
+
+<div class="card key"><span class="label">The link to share</span>
+<span class="big" id="url">https://cfacontact.github.io/film393-overunder-lab/</span>
+<p style="margin:10px 0 0"><button class="btn" data-copy="url">Copy link</button></p></div>
+
+<h2>Before Tuesday · 10 minutes</h2>
+<ol class="s">
+<li><div><b>Open the lab and click “See a finished example.”</b> It loads your original F3 test: the 45° / one-double ladder, your readings and your conclusions. Click through all 13 steps so you know what students will see. Click “Start my own group” when you’re done.</div></li>
+<li><div><b>Check the Speedmaster wording on step 5.</b> The lab tells students to use the meter’s cine mode where you enter frame rate and shutter angle (HD Cine). If the SCAD meters label it differently, tell students on the day.</div></li>
+<li><div><b>Handbook conflicts.</b> The lab follows your rules (iris stays at N, tungsten and scrims only). The printed handbook still says “change T-stop first” on page 4 and “an LED you can dim up” on page 3. Mention this in class or update the PDF.</div></li>
+<li><div><b>Post it to Blackboard</b> (next section) and create a Blackboard assignment for the PDF packet.</div></li>
+</ol>
+
+<h2>Posting it in Blackboard Ultra</h2>
+<ol class="s">
+<li><div>In the course, go to the week’s folder and click <b>+</b> → <b>Create</b> → <b>Link</b>.</div></li>
+<li><div>Name it <b>Over/Under Test Lab</b> and paste the link above.</div></li>
+<li><div>Tick <b>open in a new window</b> if it’s offered, then Save.</div></li>
+<li><div>Create an <b>Assignment</b> named “Camera Test Packet (D1–D4)” for the PDF upload. One per group is fine: add group members in the assignment’s group settings, or have one person submit and list everyone. The packet prints their names.</div></li>
+</ol>
+<div class="why"><span class="label">Why a link, not a file upload</span>Blackboard often downloads HTML files instead of opening them. The link always opens as a web page on any laptop or phone, with no login.</div>
+
+<h3>Announcement you can paste</h3>
+<div class="copy" id="ann">Tuesday we run the over/under test. Before class, one person per group should open the Test Lab and do steps 00–04 with your group: enter your camera, lens and N, and let the lab build your ladder. Check every row of the ladder.
+
+Link: https://cfacontact.github.io/film393-overunder-lab/
+
+Bring a laptop to the stage. Your work saves in that laptop's browser, so use the same laptop all day (or use "Export group file" to move it). After review, print the Packet step to PDF and upload it to the Camera Test Packet assignment.
+
+Stuck? On the first step, click "See a finished example" to see a completed test.</div>
+<p style="margin-top:8px"><button class="btn" data-copy="ann">Copy announcement</button></p>
+
+<h2>Class-day flow</h2>
+<div class="tw"><table>
+<thead><tr><th>When</th><th>Lab step</th><th>What the group does</th></tr></thead>
+<tbody>
+<tr><td>Before class</td><td>00–04</td><td>Group & roles, the variables quiz, camera/lens limits, choose N, check the ladder (all rows ✓).</td></tr>
+<tr><td>On stage, first 20 min</td><td>05</td><td>Set the Speedmaster to the base fps / shutter / EI shown, put in the base scrims, move the tungsten head until the incident reads N, lock and tape, confirm the grey card on the waveform.</td></tr>
+<tr><td>Before rolling</td><td>06</td><td>Spot-meter skin, fabric, background, highlights, shadows. Optional: snap a frame and pin the readings on it.</td></tr>
+<tr><td>Shooting</td><td>07</td><td>Checklist, then 15 takes per profile. Log reads the row aloud → 1st AC sets it → Gaffer confirms scrims → slate → roll for the time shown.</td></tr>
+<tr><td>Review / grading</td><td>08–10</td><td>One-light (one correction for all takes), best-light (each take rescued), compare profiles, EI advice.</td></tr>
+<tr><td>Wrap</td><td>11–12</td><td>Write on-set rules (the lab flags rules with no number or with adjectives), then print the packet to PDF.</td></tr>
+</tbody></table></div>
+
+<h2 id="students">Student quick start</h2>
+<div class="card">
+<ol class="s">
+<li><div>Open the link on the <b>laptop you’ll use on the stage</b>. Work saves automatically in that browser.</div></li>
+<li><div>Go through the steps in order with the <b>Next →</b> button, or jump around with the step list on the left (on a phone, the step chips at the top).</div></li>
+<li><div>Blue boxes explain <b>why</b>. Grey “From the original F3 test” boxes show a finished example. Don’t copy those numbers; your camera is different.</div></li>
+<li><div>On <b>Build the ladder</b>, every row must show a green ✓. If your camera can’t do a setting, type what it can do; the ✓ column re-checks the math.</div></li>
+<li><div>Type meter readings the way the Speedmaster shows them: <code>2.8</code>, <code>4 1/3</code>, <code>5.6 2/3</code>, or tenths like <code>2.8 7</code>.</div></li>
+<li><div>Switching laptops? <b>Packet & export → Export group file</b>, then send the file to your teammate, who clicks <b>Import group file</b>.</div></li>
+<li><div>When you’re done, <b>Packet & export → Print / Save as PDF</b> and upload it to Blackboard.</div></li>
+</ol>
+</div>
+
+<h2>Troubleshooting</h2>
+<dl>
+<dt>“My work disappeared.”</dt>
+<dd>It’s saved in the browser it was typed in. Different laptop, a different browser, a private/incognito window, or cleared history will all look empty. Go back to the original laptop, or import the exported group file.</dd>
+<dt>“The ladder step says pick N first.”</dt>
+<dd>Choose a shooting stop on step 03. The ladder is built from it.</dd>
+<dt>“A row is red.”</dt>
+<dd>The settings in that row don’t add up to its rung, or they’re outside the limits entered on step 02. The red label says which. “Reset every row” restores the lab’s suggestion.</dd>
+<dt>“Our camera shows shutter as 1/48, not degrees.”</dt>
+<dd>On step 02, set “How does your camera show shutter?” to Speed. The ladder switches to 1/x values and suggests the nearest speed your menu actually has (e.g. 1/200 for 1/192).</dd>
+<dt>“The lab wants more light than our head has.”</dt>
+<dd>Lower the “Light headroom” number on step 02. The lab picks a base that needs less light and uses frame rate or iris for the far rungs, and it says which rows changed the iris.</dd>
+<dt>“The meter column says T0.7.”</dt>
+<dd>That’s the math continuing below the widest stop. On the meter it reads as “under”. It means that rung is very dark, which is expected at N−4 and N−5.</dd>
+<dt>“Photo won’t save.”</dt>
+<dd>Very large photos can fill the browser’s storage. Use a frame grab or a smaller phone photo, and export the group file as a backup.</dd>
+<dt>“The page looks frozen / a click doesn’t work.”</dt>
+<dd>Reload the page (work is saved). If it keeps happening, note which step and tell Prof. Underhill.</dd>
+</dl>
+
+<h2>Privacy</h2>
+<p>Nothing students type, and no photos they add, ever leave their laptop. There’s no server, account or tracking. The page itself is public, but it holds no student data. You see their work only through the PDF they upload.</p>
+
+<h2>Changing the lab</h2>
+<p>The lab is one file in the GitHub repo <span class="mono">cfacontact/film393-overunder-lab</span>, and it updates within a minute of a change. Ask Claude to change wording, defaults, steps or the example, and the same link keeps working. Students’ saved work is kept across updates.</p>
+</main>
+<script>
+document.addEventListener('click',e=>{const b=e.target.closest('[data-copy]');if(!b)return;const t=document.getElementById(b.dataset.copy).innerText;
+navigator.clipboard.writeText(t).then(()=>{const o=b.textContent;b.textContent='Copied ✓';setTimeout(()=>b.textContent=o,1500);}).catch(()=>{const r=document.createRange();r.selectNodeContents(document.getElementById(b.dataset.copy));const s=getSelection();s.removeAllRanges();s.addRange(r);});});
+</script>
+</body>
+</html>

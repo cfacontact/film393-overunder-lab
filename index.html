@@ -302,6 +302,22 @@ function fresh(){
     ui:{profile:0,adding:false}
   };
 }
+/* The original F3 test (C3G4B, 2019) as a worked example. Only numbers from the book are used. */
+function demoState(){
+  const d=fresh();
+  d.step=4;
+  d.group={name:'EXAMPLE · Original F3 test',section:'FILM 393',date:'2019',members:[{name:'Example — load your own group to start',role:''}]};
+  Object.assign(d.cam,{name:'Sony PMW-F3',ei:800,profiles:'Cinegamma (Rec709), S-Log',shutterMode:'angle',minA:11.25,maxA:360,anyAngle:'no',
+    fps:24,minF:6,maxF:30,lens:'25mm prime',wide:'1.4',deep:'22',wb:3200,doubles:4,playSec:10,headroom:3});
+  d.N=3; d.base={auto:false,A0:45,D0:1};
+  d.edits={r10:{angle:'180',F:'6',D:'0'},r8:{angle:'180',F:'6',D:'1'},r6:{angle:'180',F:'12',D:'1'}};
+  d.setup={key:'2.8',fill:'',bg:'',hair:'',dist:'',fixture:'2K bounced into bead board for talent; 650 on the curtains',notes:''};
+  d.analysis={p0:{smooth:'0.5',hi:'2',crush:'-2',overRec:'1',underRec:'-1',notes:'Skin read smoothest at N+½. Nothing important survived above N+2. Caution below N−1½: noise arrived before mood did.'}};
+  d.profileCmp={p0:{verdict:'±1 stop: all effects, saturation and exposure done in camera'},p1:{roll:'Better highlight roll-off than any Cinegamma: practicals can live in frame.',sat:'Saturation stays more consistent going into shadow.',verdict:'Chosen for Cycle 3: most flexibility in shadow for post'}};
+  d.rules=['Skin reads smoothest at N+½. Place key-side skin there when the scene allows.','In Cinegamma (Rec709), nothing important above N+2.','Below N−1½, add light instead of rating up.','Cinegamma latitude is ±1 stop. All effects, saturation and exposure are done in camera.'];
+  d.demo=true;
+  return d;
+}
 let S;
 function load(){
   try{ const raw=localStorage.getItem(KEY); if(raw){ S=merge(fresh(),JSON.parse(raw)); return; } }catch(e){}
@@ -509,6 +525,7 @@ function stepGroup(){
      <li><div><b>On the floor (steps 5–7).</b> Meter to N, map your frame with spot readings, then shoot and log every rung.</div></li>
      <li><div><b>Review (steps 8–12).</b> One-light, best-light, compare profiles, then write rules your gaffer and 1st AC can hold you to. Print it as your packet.</div></li>
    </ol>
+   <div class="row noprint" style="margin:0 0 12px"><button class="btn small" data-act="demo">See a finished example (the original F3 test)</button><a class="hint" href="guide.html#students" target="_blank" rel="noopener">How to use this lab ↗</a></div>
    <p class="hint" style="margin:0">Your work saves automatically <b>in this browser on this computer</b>. To move it to a teammate’s laptop, use <b>Export group file</b> on the last step and have them import it.</p></div>
    <h2>Who’s in the group?</h2>
    <div class="grid3">${field('Group name',inp('group.name',{ph:'e.g. Group 3 — FX6',r:true}))}${field('Section',inp('group.section',{ph:'FILM 393-01'}))}${field('Test date',inp('group.date',{ph:'Tue 9/29'}))}</div>
@@ -941,7 +958,8 @@ function render(focusMain){
   document.getElementById('grpLabel').textContent=g;
   const m=document.getElementById('main');
   let body; try{ body=STEPS[S.step].f(); }catch(e){ console.error(e); body=`<div class="bad">Something went wrong on this step: ${esc(e.message)}</div>`; }
-  m.innerHTML=body+`<div class="pager noprint">${S.step>0?`<button class="btn" data-act="go" data-arg="${S.step-1}">← ${esc(STEPS[S.step-1].t)}</button>`:'<span></span>'}${S.step<STEPS.length-1?`<button class="btn primary" data-act="go" data-arg="${S.step+1}">${esc(STEPS[S.step+1].t)} →</button>`:''}</div>`;
+  const banner=S.demo?`<div class="warn noprint" style="margin-top:0"><b>You’re looking at the example</b> (the original F3 test). Click around to see a finished test. <button class="btn small" data-act="endDemo">Start my own group</button></div>`:'';
+  m.innerHTML=banner+body+`<div class="pager noprint">${S.step>0?`<button class="btn" data-act="go" data-arg="${S.step-1}">← ${esc(STEPS[S.step-1].t)}</button>`:'<span></span>'}${S.step<STEPS.length-1?`<button class="btn primary" data-act="go" data-arg="${S.step+1}">${esc(STEPS[S.step+1].t)} →</button>`:''}</div>`;
   if(focusMain){ window.scrollTo(0,0); m.focus({preventScroll:true}); }
 }
 function readVal(el){
@@ -997,6 +1015,12 @@ const ACTS={
   print:()=>window.print(),
   export:()=>{const blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=`FILM393-${(S.group.name||'group').replace(/[^\w-]+/g,'_')}-exposure-test.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);},
   import:()=>document.getElementById('fileImport').click(),
+  demo:()=>{
+    const hasWork=S.group.name||S.N!=null;
+    if(hasWork&&!confirm('Loading the example replaces what’s on this computer. Export your group file first if you need it. Continue?')) return;
+    S=demoState(); save(); render(true);
+  },
+  endDemo:()=>{ if(confirm('Clear the example and start a blank group?')){ S=fresh(); save(); render(true); } },
   newGroup:()=>{if(confirm('Start over with a blank group? Export first if you want to keep this one.')){S=fresh();save();render(true);}},
 };
 function nextLabel(){ const used=new Set(S.map.markers.map(m=>m.label)); return MK_LABELS.find(l=>!used.has(l))||'Other'; }
