@@ -323,25 +323,9 @@ function fresh(){
     ui:{profile:0,adding:false}
   };
 }
-/* The original F3 test (C3G4B, 2019) as a worked example. Only numbers from the book are used. */
-function demoState(){
-  const d=fresh();
-  d.step=4;
-  d.group={name:'EXAMPLE · Original F3 test',section:'FILM 393',date:'2019',members:[{name:'Example — load your own group to start',role:''}]};
-  Object.assign(d.cam,{name:'Sony PMW-F3',ei:800,profiles:'Cinegamma (Rec709), S-Log',shutterMode:'angle',angleMode:'list',angles:'11.25, 22.5, 45, 90, 180, 360',
-    fps:24,minF:6,maxF:30,lens:'25mm prime',wide:'1.4',deep:'22',wb:3200,doubles:4,singles:0,playSec:10,headroom:3});
-  d.N=3; d.base={auto:false,A0:45,D0:1,G0:0};
-  d.edits={r10:{angle:'180',F:'6',D:'0'},r8:{angle:'180',F:'6',D:'1'},r6:{angle:'180',F:'12',D:'1'}};
-  d.setup={key:'2.8',fill:'',bg:'',hair:'',dist:'',fixture:'2K bounced into bead board for talent; 650 on the curtains',notes:''};
-  d.analysis={p0:{smooth:'0.5',hi:'2',crush:'-2',overRec:'1',underRec:'-1',notes:'Skin read smoothest at N+½. Nothing important survived above N+2. Caution below N−1½: noise arrived before mood did.'}};
-  d.profileCmp={p0:{verdict:'±1 stop: all effects, saturation and exposure done in camera'},p1:{roll:'Better highlight roll-off than any Cinegamma: practicals can live in frame.',sat:'Saturation stays more consistent going into shadow.',verdict:'Chosen for Cycle 3: most flexibility in shadow for post'}};
-  d.rules=['Skin reads smoothest at N+½. Place key-side skin there when the scene allows.','In Cinegamma (Rec709), nothing important above N+2.','Below N−1½, add light instead of rating up.','Cinegamma latitude is ±1 stop. All effects, saturation and exposure are done in camera.'];
-  d.demo=true;
-  return d;
-}
 let S;
 function load(){
-  try{ const raw=localStorage.getItem(KEY); if(raw){ S=merge(fresh(),JSON.parse(raw)); return; } }catch(e){}
+  try{ const raw=localStorage.getItem(KEY); if(raw){ S=merge(fresh(),JSON.parse(raw)); if(S.demo) S=fresh(); return; } }catch(e){}
   S=fresh();
 }
 function merge(a,b){
@@ -613,7 +597,6 @@ function sel(path,opts,{r=true,cls='',num=false}={}){
 function field(label,control,hint=''){ return `<label class="field"><span>${label}</span>${control}${hint?`<small>${hint}</small>`:''}</label>`; }
 function chk(path,text){ return `<label class="check"><input type="checkbox" data-bind="${path}" data-r="1" ${getP(path)?'checked':''}><span>${text}</span></label>`; }
 function why(title,body){ return `<div class="why"><span class="label">${title}</span>${body}</div>`; }
-function orig(body){ return `<div class="orig"><span class="label">Example: the original F3 camera test</span>${body}</div>`; }
 function head(n,title,lead){ return `<p class="eyebrow">Step ${String(n).padStart(2,'0')} of ${STEPS.length-1} · ${esc(STEPS[n].t)}</p><h1>${title}</h1>${lead?`<p class="lead">${lead}</p>`:''}`; }
 function profTabs(){
   const ps=profiles(), c=curProf();
@@ -639,7 +622,7 @@ function stepGroup(){
      <li><div><b>Shoot it (steps 5–7).</b> Use the light meter to set the light, measure your frame, then record and log all 15 takes.</div></li>
      <li><div><b>Study it (steps 8–12).</b> Review the footage two ways, compare recording profiles, write rules for your crew, and print everything as your packet.</div></li>
    </ol>
-   <div class="row noprint" style="margin:0 0 12px"><button class="btn small" data-act="demo">See a finished example (the original F3 test)</button><a class="hint" href="guide.html#students" target="_blank" rel="noopener">How to use this lab ↗</a></div>
+   <div class="row noprint" style="margin:0 0 12px"><a class="hint" href="guide.html#students" target="_blank" rel="noopener">How to use this lab ↗</a></div>
    <p class="hint" style="margin:0">Every step starts with a <b>“What are we doing now?”</b> box. Any word you don’t know is in <b>Words on this page</b>, or in the <b>Word list</b> button at the top. Your work saves automatically <b>in this browser on this computer</b>. To move it to a teammate’s laptop, use <b>Export group file</b> on the last step.</p></div>
    <h2>Who’s in the group?</h2>
    <div class="grid3">${field('Group name',inp('group.name',{ph:'e.g. Group 3, FX6',r:true}))}${field('Class section',inp('group.section',{ph:'FILM 393-01'}))}${field('Test date',inp('group.date',{ph:'Tuesday 9/29'}))}</div>
@@ -734,7 +717,6 @@ function stepCamera(){
   </div>
   <div class="warn"><b>No ND filters, and leave the lens alone.</b> This test changes exposure only with shutter angle, frame rate and scrims. An ND filter or a lens change would add another variable (and the lens changes depth of field). The lab only moves the lens if nothing else can reach a take, and it marks that take with ⚠︎.</div>
   ${why('Why tungsten and scrims',`<p>A scrim is a wire-mesh screen in front of the lamp. It makes the light dimmer and changes nothing else: the direction, softness and color all stay the same. A <b>double</b> cuts about 1 stop and a <b>single</b> about ½ stop.</p><p style="margin:0">Don’t use a dimmer: dimming tungsten makes it more orange, so skin would get warmer as it gets darker, and then two things changed. Don’t move the light either: moving it changes contrast.</p>`)}
-  ${orig(`<p class="big">Sony PMW-F3 camera · Exposure Index 800 · 3200K · 25mm lens · profiles: Cinegamma 1–4 and S-Log</p><p style="margin:0" class="hint">Changed between takes: shutter angle, frame rate, T-stop (only halfway settings for half-stops) and double scrims. The light itself never moved.</p>`)}
   ${words(['ei','profile','kelvin','shutter','speed','fps','sensorfps','tstop','scrim','single','nd','dimmer','stop'])}`;
 }
 
@@ -751,7 +733,6 @@ function stepN(){
     <div class="stat"><span class="label">Your N</span><span class="big-num">${p.sN==null?'—':fmtT(p.sN)}</span></div>
   </div></div>${warnHalf}
   ${why('How to choose N',`<ul style="margin:0;padding-left:20px"><li><b>Depth of field.</b> How much of the picture do you want sharp, from front to back? A smaller number means less in focus.</li><li><b>Your filters.</b> Diffusion or other filters in front of the lens cost light, so plan for them.</li><li><b>Your locations.</b> How much light can you actually get into those rooms?</li><li><b>Your lens.</b> Most lenses are sharpest a stop or two in from wide open.</li></ul>`)}
-  ${orig(`<p class="big">N = T2.8</p><p style="margin:0">Chosen for shallow depth of field on the wider lenses used for Steadicam shots, and because the filters would “cut almost a stop of light” in a location with limited power. The meter and camera both stayed at Exposure Index 800, and the grey card was lit to T2.8.</p>`)}
   ${words(['N','tstop','dof','stop'])}`;
 }
 
@@ -814,11 +795,7 @@ function stepLadder(){
   <p class="hint">A meter number below T1 (like “T0.7”) is just the math going past the end of the meter’s scale. The meter will show it as “under”, meaning very dark. That’s expected for the darkest takes.</p>
   ${why('How to read “Prove it with the meter”',`<p>This is how you <b>prove</b> each take is right with the Speedmaster. Type that row’s frame rate and shutter angle into the meter (same Exposure Index) and take a dome reading at the actor. The meter tells you which T-stop would be a <em>normal</em> exposure at those settings. Compare that to where the lens actually is:</p><p><b>The meter says T5.6 but the lens is at T2.8, so the lens is 2 stops more open than normal. That’s N+2.</b></p><p style="margin:0">For takes where scrims go in or out, first check that the dome reading changed by the amount you expected. Real scrims aren’t perfect: a “double” can really be ¾ or 1¼ stops. If it’s off, type the real reading on the Shoot step and the lab corrects that take.</p>`)}
   ${why('Why half-stops only near N',`<p style="margin:0">The most interesting changes happen within a stop and a half of N: where skin looks best, and where it starts to go wrong. Past ±2 stops you’re only finding the walls, so whole stops are enough.</p>`)}
-  <details><summary>See the original F3 ladder</summary>
-  ${orig(`<p class="hint">N = T2.8 · 45° shutter · 24 frames per second · 1 double scrim in. The lens only moved halfway for the half-stops. The shutter did the middle takes, the frame rate the brightest, and double scrims the darkest.</p>
-   <div class="tbl-wrap"><table><thead><tr><th>Take</th><th>T-stop</th><th>Shutter angle</th><th>Frame rate</th><th>Scrims</th><th>Record for</th></tr></thead><tbody>
-   ${[['+5','2.8','180°','6','none','40 sec'],['+4','2.8','180°','6','1 double','40 sec'],['+3','2.8','180°','12','1 double','20 sec'],['+2','2.8','180°','24','1 double','10 sec'],['+1½','halfway 2 and 2.8','90°','24','1 double','10 sec'],['+1','2.8','90°','24','1 double','10 sec'],['+½','halfway 2 and 2.8','45°','24','1 double','10 sec'],['N','2.8','45°','23.976','1 double','10 sec'],['−½','halfway 2.8 and 4','45°','24','1 double','10 sec'],['−1','2.8','22.5°','24','1 double','10 sec'],['−1½','halfway 2.8 and 4','22.5°','24','1 double','10 sec'],['−2','2.8','11.25°','24','1 double','10 sec'],['−3','2.8','11.25°','24','2 doubles','10 sec'],['−4','2.8','11.25°','24','3 doubles','10 sec'],['−5','2.8','11.25°','24','4 doubles','10 sec']].map(r=>`<tr><td class="rung">${r[0]}</td>${r.slice(1).map(c=>`<td class="mono">${c}</td>`).join('')}</tr>`).join('')}
-   </tbody></table></div>`)}</details>
+
   ${words(['ladder','rung','N','stop','shutter','fps','scrim','tstop','split','dof','incident','meter'])}`;
 }
 
@@ -990,7 +967,6 @@ function stepOneLight(){
     ${field('Usable stops',inp(base+'.usable',{type:'number',ph:c1!=null&&l1!=null?String(c1+l1):'e.g. 6'}),c1!=null&&l1!=null?`From your answers: about <b>${fmtStops(c1+l1,false)}</b> stops between clip and lost shadows.`:'The number of stops between where highlights clip and where shadow detail is lost.')}
     ${field('My rating (Exposure Index)',inp(base+'.myEI',{type:'number',ph:String(S.cam.ei||800)}),'The Exposure Index you’d use for this profile after seeing these results. Step 10 helps you decide.')}
   </div></div>
-  ${orig(`<p class="big">Skin looked smoothest at N+½. Nothing important survived above N+2. Be careful below N−1½: noise arrived before mood did.</p><p class="hint" style="margin:0">Your numbers will be different. That’s the whole point of running your own test.</p>`)}
   ${words(['onelight','grade','clip','noise','waveform','N','ei'])}`;
 }
 
@@ -1020,7 +996,6 @@ function stepBestLight(){
   </div></div>
   <div class="card key"><span class="label">Assigned latitude · ${esc(profiles()[curProf()])}</span><span class="big-num">${lat}</span> <span class="muted">stops</span>
   <p class="hint" style="margin:8px 0 0">That’s how many stops brighter (+) and darker (−) than N you can shoot and still fix. Say what standard you used to judge “clean” in your write-up.</p></div>
-  ${orig(`<p class="big">Rec709 latitude: ±1 stop.</p><p style="margin:0">Conclusion: “All effects, saturation and exposure should be done in camera.” Small latitude doesn’t mean a bad camera. It means a rule: get it right on set.</p>`)}
   ${words(['bestlight','latitude','grade','clip','noise','rolloff','N'])}`;
 }
 
@@ -1046,7 +1021,6 @@ function stepProfiles(){
   <h2>Should you change the Exposure Index?</h2>
   ${ps.map((p,i)=>{const a=eiAdvice(S.analysis['p'+i]);return `<div class="card"><span class="label">${esc(p)}</span>${a?`<p style="margin:0">${a.txt}</p>`:'<p class="muted" style="margin:0">Finish Review 2 (best light) for this profile first.</p>'}</div>`;}).join('')}
   ${why('How changing the Exposure Index works',`<p>Rate the camera <b>“faster”</b> (a higher number than native) and your meter asks for less light. Skin lands lower, which leaves more room above it before clipping, and you pay for it with more shadow noise. Rate it <b>“slower”</b> (a lower number) and you get cleaner shadows with less room for bright areas.</p><p style="margin:0">Your creative goals can override the balanced number. If you need to protect lamps and windows in the shot, rate faster. <b>Whatever you pick, shoot the ladder again at the new rating to prove it.</b></p>`)}
-  ${orig(`<p class="big">S-Log chosen over Cinegammas 1–4.</p><p style="margin:0">Bright areas faded to white more smoothly, so lamps could stay in the shot, and colors stayed consistent going into shadow. “Shadow detail and overall blacks are important to me.”</p>`)}
   ${words(['profile','rolloff','ei','rerate','latitude','practical'])}`;
 }
 
@@ -1131,7 +1105,7 @@ function render(focusMain){
   document.getElementById('grpLabel').textContent=g;
   const m=document.getElementById('main');
   let body; try{ body=STEPS[S.step].f(); }catch(e){ console.error(e); body=`<div class="bad">Something went wrong on this step: ${esc(e.message)}</div>`; }
-  const banner=S.demo?`<div class="warn noprint" style="margin-top:0"><b>You’re looking at the example</b> (the original F3 test). Click around to see a finished test. Note: that 2019 test made its half-stops by setting the lens halfway between marks, so those takes show ⚠︎. <b>Your class uses single scrims instead</b>, so your lens stays at N. <button class="btn small" data-act="endDemo">Start my own group</button></div>`:'';
+  const banner='';
   m.innerHTML=banner+body+`<div class="pager noprint">${S.step>0?`<button class="btn" data-act="go" data-arg="${S.step-1}">← ${esc(STEPS[S.step-1].t)}</button>`:'<span></span>'}${S.step<STEPS.length-1?`<button class="btn primary" data-act="go" data-arg="${S.step+1}">${esc(STEPS[S.step+1].t)} →</button>`:''}</div>`;
   if(focusMain){ window.scrollTo(0,0); m.focus({preventScroll:true}); }
 }
@@ -1190,12 +1164,6 @@ const ACTS={
   closeGloss:()=>document.getElementById('gloss').close(),
   export:()=>{const blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=`FILM393-${(S.group.name||'group').replace(/[^\w-]+/g,'_')}-exposure-test.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);},
   import:()=>document.getElementById('fileImport').click(),
-  demo:()=>{
-    const hasWork=S.group.name||S.N!=null;
-    if(hasWork&&!confirm('Loading the example replaces what’s on this computer. Export your group file first if you need it. Continue?')) return;
-    S=demoState(); save(); render(true);
-  },
-  endDemo:()=>{ if(confirm('Clear the example and start a blank group?')){ S=fresh(); save(); render(true); } },
   newGroup:()=>{if(confirm('Start over with a blank group? Export first if you want to keep this one.')){S=fresh();save();render(true);}},
 };
 function nextLabel(){ const used=new Set(S.map.markers.map(m=>m.label)); return MK_LABELS.find(l=>!used.has(l))||'Other'; }
