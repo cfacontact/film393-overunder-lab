@@ -148,6 +148,11 @@ tr.half td.rung{color:var(--muted)}
 .hide{display:none!important}
 .talk{background:#f3eefc;border-left:4px solid #7a4fc9;border-radius:0 8px 8px 0;padding:12px 16px;margin:14px 0}
 .talk .label{color:#6a3fb8}
+.sync-pill{font:600 12px var(--mono);padding:5px 9px;border-radius:99px;white-space:nowrap}
+.sync-pill.off{display:none}
+.sync-pill.live{background:var(--ok-soft);color:var(--ok)}
+.sync-pill.connecting{background:var(--soft);color:var(--muted)}
+.sync-pill.offline{background:var(--warn-soft);color:var(--warn)}
 .now{background:var(--paper);border:2px solid var(--accent);border-radius:10px;padding:16px 20px;margin:18px 0 22px}
 .now .label{color:var(--accent)}
 .now .doing{font:500 20px/1.35 var(--serif);margin-bottom:10px}
@@ -198,6 +203,7 @@ dialog#gloss dd{margin:3px 0 0;color:var(--muted)}
 <header class="top">
   <div class="brand">FILM 393 · <b>Over/Under</b> Test Planner</div>
   <div class="grp" id="grpLabel"></div>
+  <span id="syncPill" class="sync-pill off noprint"></span>
   <button class="btn small noprint" data-act="gloss">Word list</button>
 </header>
 <div class="wrap">
@@ -336,6 +342,7 @@ let saveWarned=false;
 function save(){
   try{ localStorage.setItem(KEY,JSON.stringify(S)); saveWarned=false; }
   catch(e){ if(!saveWarned){ saveWarned=true; alert('Autosave failed (browser storage is full or blocked — often the photo is too big). Use "Export group file" on the last step to keep your work.'); } }
+  if(typeof scheduleSync==='function') scheduleSync();
 }
 function getP(path){ return path.split('.').reduce((o,k)=>o==null?undefined:o[k],S); }
 function setP(path,val){
@@ -808,7 +815,7 @@ function stepGroup(){
    </ol>
    <div class="row noprint" style="margin:0 0 12px"><a class="hint" href="guide.html#students" target="_blank" rel="noopener">How to use this page ↗</a></div>
    <p style="margin:0 0 10px"><span class="fill-key"></span><b>Yellow boxes are waiting for you to fill them in.</b> They turn white once they have an answer. <span class="calc-key"></span><b>Blue boxes are calculated for you.</b> Type in one to change it.</p>
-   <p class="hint" style="margin:0">Every step starts with a <b>“What are we doing now?”</b> box. Any word you don’t know is in <b>Words on this page</b>, or in the <b>Word list</b> button at the top. Your work saves automatically <b>in this browser on this computer</b>. To move it to a teammate’s laptop, use <b>Export group file</b> on the last step.</p></div>
+   <p class="hint" style="margin:0">Every step starts with a <b>“What are we doing now?”</b> box. Any word you don’t know is in <b>Words on this page</b>, or in the <b>Word list</b> button at the top. On your group’s link, <b>everyone’s work is shared live</b>: open the same link on any laptop or phone and you’ll all see the same thing, updating as people type.</p></div>
    <h2>Who’s in the group?</h2>
    <div class="grid3">${field('Group name',inp('group.name',{ph:'Example: Group 3, FX6',r:true}))}${field('Class section',inp('group.section',{ph:'FILM 393-01'}))}${field('Test date',inp('group.date',{ph:'Tuesday 9/29'}))}</div>
    <h3>Members and their jobs</h3>
@@ -1149,7 +1156,7 @@ function stepPacket(){
     <button class="btn primary" data-act="print">Print / Save as PDF</button>
     <button class="btn" data-act="export">Export group file</button>
     <button class="btn" data-act="import">Import group file</button>
-    <button class="btn ghost" data-act="newGroup">Start a new group</button>
+    ${GROUP?'':'<button class="btn ghost" data-act="newGroup">Start a new group</button>'}
   </div>
   <p class="hint noprint">To save a PDF: click Print, then choose “Save as PDF” as the printer. <b>Export group file</b> downloads a small file with all your work. A teammate opens this page and clicks <b>Import group file</b> to continue on their laptop.</p>
   <div class="card key"><span class="label">FILM 393 · Camera test</span>
@@ -1290,10 +1297,127 @@ document.getElementById('fileImg').addEventListener('change',e=>{
   rd.onload=()=>{ const im=new Image(); im.onload=()=>{ const max=1400, sc=Math.min(1,max/Math.max(im.width,im.height)); const cv=document.createElement('canvas'); cv.width=Math.round(im.width*sc); cv.height=Math.round(im.height*sc); cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height); S.map.img=cv.toDataURL('image/jpeg',0.8); S.ui.adding=true; save(); render(); }; im.onerror=()=>alert('That image couldn’t be opened. Try a JPG or PNG.'); im.src=rd.result; };
   rd.readAsDataURL(f); e.target.value='';
 });
-load(); render();
+load();
+/* ============================================================
+   LIVE SYNC BETWEEN LAPTOPS (per group link, e.g. ?group=3)
+   Safety rules, because groups were already working before sync existed:
+   - Before the first sync, this laptop's work is copied to a separate backup key.
+   - The first laptop to connect seeds the group; later laptops only FILL EMPTY boxes,
+     they never replace anything already in the shared copy.
+   - After that, only the changed boxes are sent (never the whole thing).
+   ============================================================ */
+const SYNC_URL='https://film393-sync-production.up.railway.app';
+const ROOM=GROUP?'film393-fa26-g'+GROUP:'';
+const CLIENT=Math.random().toString(36).slice(2,10);
+const LOCAL_ONLY=['step','ui','demo'];
+let syncV=-1, synced=null, syncReady=false, syncT=null, syncBusy=false, es=null, syncState='off', peers=0;
+const clone=o=>JSON.parse(JSON.stringify(o));
+function shareable(){ const o={}; for(const k in S) if(!LOCAL_ONLY.includes(k)) o[k]=S[k]; return clone(o); }
+function isEmptyV(v){ return v==null||v===''||(Array.isArray(v)&&v.length===0)||(typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length===0); }
+function isObj(v){ return v&&typeof v==='object'&&!Array.isArray(v); }
+/* shared copy wins; this laptop only fills boxes the shared copy leaves empty */
+function fillMerge(s,l){
+  if(isEmptyV(s)) return clone(l===undefined?null:l);
+  if(isObj(s)&&isObj(l)){ const r=clone(s); for(const k in l) r[k]=fillMerge(s[k],l[k]); return r; }
+  if(Array.isArray(s)&&Array.isArray(l)){ const r=clone(s); for(let i=0;i<l.length;i++) r[i]=fillMerge(s[i],l[i]); return r; }
+  return clone(s);
+}
+/* Lists where both laptops' entries should be KEPT (not box-by-box): members, rules, meter readings on the photo */
+function unionLists(m,s,l){
+  const uniq=(arr,key)=>{const seen=new Set(),out=[];for(const x of arr){const k=key(x);if(!k||seen.has(k))continue;seen.add(k);out.push(clone(x));}return out;};
+  const sm=(s.group&&s.group.members)||[], lm=(l.group&&l.group.members)||[];
+  const members=uniq([...sm,...lm],x=>String(x&&x.name||'').trim().toLowerCase());
+  while(members.length<3&&members.length<5) members.push({name:'',role:''});
+  if(m.group) m.group.members=members.slice(0,Math.max(5,members.length));
+  m.rules=uniq([...(s.rules||[]),...(l.rules||[])],x=>String(x||'').trim());
+  if(m.map) m.map.markers=uniq([...((s.map&&s.map.markers)||[]),...((l.map&&l.map.markers)||[])],x=>x&&(x.label+'|'+x.reading+'|'+x.x+'|'+x.y));
+  return m;
+}
+/* list of changed boxes between two copies; arrays are sent whole */
+function diffOps(a,b,p,ops){
+  if(Array.isArray(a)&&Array.isArray(b)&&a.length===b.length){ for(let i=0;i<b.length;i++) diffOps(a[i],b[i],p?p+'.'+i:String(i),ops); return ops; }
+  if(Array.isArray(a)||Array.isArray(b)){ if(JSON.stringify(a)!==JSON.stringify(b)) ops.push({p,v:b===undefined?null:b}); return ops; }
+  if(isObj(a)&&isObj(b)){ const ks=new Set([...Object.keys(a),...Object.keys(b)]); for(const k of ks) diffOps(a[k],b[k],p?p+'.'+k:k,ops); return ops; }
+  if(JSON.stringify(a)!==JSON.stringify(b)) ops.push({p,v:b===undefined?null:b});
+  return ops;
+}
+function setIn(o,path,val){ const ks=path.split('.'); for(let i=0;i<ks.length-1;i++){ if(o[ks[i]]==null||typeof o[ks[i]]!=='object') o[ks[i]]=/^\d+$/.test(ks[i+1])?[]:{}; o=o[ks[i]]; } o[ks[ks.length-1]]=val; }
+function adoptShared(data){ const keep={step:S.step,ui:S.ui}; S=merge(fresh(),clone(data)); S.step=keep.step; S.ui=keep.ui; }
+function setSyncState(st){ syncState=st; const el=document.getElementById('syncPill'); if(!el) return;
+  el.className='sync-pill '+st;
+  el.textContent=st==='live'?`● Live · ${peers} laptop${peers===1?'':'s'} on this link`:st==='connecting'?'○ Connecting…':'○ Offline: saving on this laptop, will sync when back';
+}
+function scheduleSync(){ if(!syncReady) return; clearTimeout(syncT); syncT=setTimeout(pushChanges,300); }
+async function pushChanges(){
+  if(!syncReady||syncBusy) return;
+  const now=shareable(); const ops=diffOps(synced,now,'',[]).filter(o=>o.p);
+  if(!ops.length) return;
+  syncBusy=true;
+  try{ const r=await fetch(`${SYNC_URL}/room/${ROOM}/patch`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ops,client:CLIENT})});
+    if(r.ok){ for(const o of ops) setIn(synced,o.p,clone(o.v)); try{ const j=await r.json(); if(j.v>syncV) syncV=j.v; }catch(e){} } }
+  catch(e){ setSyncState('offline'); }
+  finally{ syncBusy=false; if(diffOps(synced,shareable(),'',[]).filter(o=>o.p).length) scheduleSync(); }
+}
+let remoteT=null;
+function remoteRender(){ clearTimeout(remoteT); remoteT=setTimeout(()=>{
+  const a=document.activeElement, key=a&&a.dataset&&a.dataset.bind;
+  if(key&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA')) liveRender(key); else { const y=window.scrollY; render(); window.scrollTo(0,y); }
+},150); }
+function applyRemote(ops){
+  const a=document.activeElement, focusKey=a&&a.dataset&&a.dataset.bind;
+  for(const o of ops){
+    setIn(synced,o.p,clone(o.v));
+    if(focusKey&&(o.p===focusKey)) continue;   // don't yank a box out from under someone typing
+    setIn(S,o.p,clone(o.v));
+  }
+  try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){}
+  remoteRender();
+}
+/* Join (first connect AND every reconnect): send any edits made here since the last sync,
+   then hand the server this laptop's whole copy. The SERVER combines it into the shared copy
+   (fills empty boxes, combines lists, never replaces existing work) and returns the result. */
+async function joinRoom(){
+  if(synced){ const ops=diffOps(synced,shareable(),'',[]).filter(o=>o.p);
+    if(ops.length){ const r=await fetch(`${SYNC_URL}/room/${ROOM}/patch`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ops,client:CLIENT})}); if(!r.ok) throw new Error('patch'); } }
+  const r=await fetch(`${SYNC_URL}/room/${ROOM}/join`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:shareable(),client:CLIENT})});
+  if(!r.ok) throw new Error('join');
+  const j=await r.json();
+  syncV=j.v; synced=clone(j.data||{}); adoptShared(j.data||{});
+  try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){}
+  remoteRender();
+}
+async function startSync(){
+  if(!ROOM||location.protocol==='file:') return;
+  setSyncState('connecting');
+  try{
+    try{ if(!localStorage.getItem(KEY+'-before-sync')) localStorage.setItem(KEY+'-before-sync',JSON.stringify(S)); }catch(e){}
+    await joinRoom();
+    syncReady=true; scheduleSync(); openEvents();
+  }catch(e){ setSyncState('offline'); setTimeout(startSync,8000); }
+}
+function openEvents(){
+  if(es) es.close();
+  es=new EventSource(`${SYNC_URL}/room/${ROOM}/events`);
+  let first=true;
+  es.onmessage=ev=>{ let m; try{ m=JSON.parse(ev.data); }catch(e){ return; }
+    if(m.type==='hello'){ if(!first||m.v!==syncV) joinRoom().catch(()=>setSyncState('offline')); first=false; setSyncState('live'); }
+    else if(m.type==='presence'){ peers=m.n; setSyncState('live'); }
+    else if(m.type==='patch'&&m.client!==CLIENT){ applyRemote(m.ops||[]); if(m.v>syncV) syncV=m.v; }
+    else if(m.type==='patch'){ if(m.v>syncV) syncV=m.v; }
+    else if(m.type==='replace'&&m.client!==CLIENT){
+      const pend=synced?diffOps(synced,shareable(),'',[]).filter(o=>o.p):[];   // my edits not sent yet
+      syncV=m.v; synced=clone(m.data||{}); adoptShared(m.data||{}); for(const o of pend) setIn(S,o.p,clone(o.v));
+      try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){}
+      remoteRender(); scheduleSync();
+    }
+  };
+  es.onerror=()=>{ setSyncState('offline'); };
+}
+setInterval(()=>{ if(syncReady) pushChanges(); },5000);
+render(); startSync();
 /* When a new version is published, open pages reload themselves (work is already saved).
    Never mid-typing: waits until no box is being edited. */
-const BUILD='20260929-093141';
+const BUILD='20260929-094553';
 let updatePending=false;
 function maybeReload(){
   const a=document.activeElement, typing=a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT');

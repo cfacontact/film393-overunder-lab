@@ -70,7 +70,7 @@ dd{margin:4px 0 0}
 
 <h2>Posting it in Blackboard Ultra: one link per group</h2>
 <p>The page is already published publicly on the web (free, through GitHub Pages). Anyone with the link can open it, and no login is needed. You don’t have to publish anything else.</p>
-<p>Give <b>each group its own link</b>. The only difference is the <span class="mono">?group=</span> number at the end. Each link opens already labeled with that group’s number and <b>saves that group’s work separately</b>, so two groups using the same computer never overwrite each other.</p>
+<p>Give <b>each group its own link</b>. The only difference is the <span class="mono">?group=</span> number at the end. Each link opens already labeled with that group’s number. <b>Every device on the same link shares the same work, live</b>: laptops and phones can all be on it at once, and edits appear on everyone’s screen within a second. Different links never mix.</p>
 <div class="tw"><table><thead><tr><th>Group</th><th>Link</th><th></th></tr></thead><tbody>
 <tr><td>Group 1</td><td><span class="mono" id="g1">https://cfacontact.github.io/film393-overunder-lab/?group=1</span></td><td><button class="btn" data-copy="g1">Copy</button></td></tr>
 <tr><td>Group 2</td><td><span class="mono" id="g2">https://cfacontact.github.io/film393-overunder-lab/?group=2</span></td><td><button class="btn" data-copy="g2">Copy</button></td></tr>
@@ -120,13 +120,13 @@ Bring a laptop to the stage and use the same one all day (or use "Export group f
 <h2 id="students">Student quick start</h2>
 <div class="card">
 <ol class="s">
-<li><div>Open <b>your group’s link</b> on the <b>laptop you’ll use on the stage</b>. Work saves automatically in that browser.</div></li>
+<li><div>Open <b>your group’s link</b> on as many laptops or phones as you like. <b>Everyone on the same link sees the same work, live</b>: what one person types appears on everyone else’s screen within a second. The green “● Live” tag at the top shows how many devices are on your link.</div></li>
 <li><div>Go through the steps in order with the <b>Next →</b> button, or jump around with the step list on the left (on a phone, the step chips at the top).</div></li>
 <li><div>Every step starts with <b>“What are we doing now?”</b>, which says what you’re doing, why it matters, and how you know you’re done. Don’t know a word? Open <b>Words on this page</b> at the bottom, or click <b>Word list</b> at the top.</div></li>
 <li><div><b>Yellow boxes</b> are waiting for your answer. On the Camera step, every question has a <b>“How do I find this?”</b> link. Use it with the camera in your hands <b>before</b> asking for help.</div></li>
 <li><div><b>The math is calculated as you type.</b> <b>Blue boxes</b> on steps 4 and 5 are calculated for you; type in one to change it and everything re-checks. Purple <b>“Talk it over”</b> boxes tell you when to stop and explain the math to each other.</div></li>
 <li><div>Type meter readings the way the Speedmaster shows them: <code>2.8</code>, <code>4 1/3</code>, <code>5.6 2/3</code>, or tenths like <code>2.8 7</code>.</div></li>
-<li><div>Switching laptops? On the last step, click <b>Export group file</b> and send the file to your teammate, who opens your group’s link and clicks <b>Import group file</b>.</div></li>
+<li><div>Switching laptops? Just open your group’s link on the new one: your work is already there.</div></li>
 <li><div>When you’re done, go to the last step, click <b>Print / Save as PDF</b>, and upload the PDF to Blackboard.</div></li>
 </ol>
 </div>
@@ -134,7 +134,7 @@ Bring a laptop to the stage and use the same one all day (or use "Export group f
 <h2>Troubleshooting</h2>
 <dl>
 <dt>“My work disappeared.”</dt>
-<dd>It’s saved in the browser it was typed in, under that group’s link. A different laptop or browser, a private/incognito window, cleared history, or <b>another group’s link</b> will all look empty. Go back to the original laptop and your group’s link, or import the exported group file.</dd>
+<dd>Check that you opened <b>your own group’s link</b> (the number at the end). Work is shared live across every device on that link, and each device also keeps its own copy, so if the connection drops you keep working and it syncs when you’re back online (the tag at the top turns yellow while offline).</dd>
 
 <dt>“A row says ‘this lands on N+1, not N+2’.”</dt>
 <dd>A value someone typed in that row adds up to a different take. Clear the box to go back to the calculated value, or open “How to think about it” and recount the stops.</dd>
@@ -154,8 +154,10 @@ Bring a laptop to the stage and use the same one all day (or use "Export group f
 <dd>Reload the page (work is saved). If it keeps happening, note which step and tell Prof. Underhill.</dd>
 </dl>
 
+<h2>How the live sharing works</h2>
+<p>Each group’s work is stored on a small server in your Railway account (project <span class="mono">FILM393 Sync</span>, about $1–3 a month). When a device joins a link, anything it already had is <b>added</b> to the group’s shared copy: empty boxes get filled in, and member names, rules and readings are combined. Nothing already there is ever replaced. Before a device synced for the first time, its own copy was also saved separately on that device as a backup.</p>
 <h2>Privacy</h2>
-<p>Nothing students type, and no photos they add, ever leave their laptop. There’s no server, account or tracking. The page itself is public, but it holds no student data. You see their work only through the PDF they upload.</p>
+<p>Student work (including any frame photos) is stored only on your own Railway server, under each group’s link. There are no accounts and no tracking. The page itself is public; anyone who has a group’s link can see and edit that group’s work, so share each link only with its group.</p>
 
 <h2>Making changes</h2>
 <p>The page is one file in the GitHub repo <span class="mono">cfacontact/film393-overunder-lab</span>, and it updates within a minute of a change. Ask Claude to change wording, defaults or steps, and the same link keeps working. Students’ saved work is kept across updates.</p>
