@@ -372,7 +372,8 @@ function curProf(){ const n=profiles().length; if(S.ui.profile>=n) S.ui.profile=
    CAMERA PARAMS + LADDER SOLVER
    ============================================================ */
 function angleList(c){
-  const xs=String(c.angles||'').split(/[,\s]+/).map(x=>parseFloat(x.replace('°',''))).filter(x=>x>0&&x<=360+EPS);
+  /* only plain numbers count: "64F" (slow-shutter frame counts) and other text are ignored, never misread */
+  const xs=String(c.angles||'').split(/[,\s]+/).map(x=>x.trim().replace('°','')).filter(x=>/^\d+(\.\d+)?$/.test(x)).map(Number).filter(x=>x>0&&x<=360+EPS);
   return [...new Set(xs.map(x=>Math.round(x*1000)/1000))].sort((a,b)=>a-b);
 }
 function P(){
@@ -1232,8 +1233,8 @@ function issues(){
     const nums=angleList(c);
     if(!raw) add('bad','<b>Fill in your shutter angle list.</b> Scroll through your camera’s shutter-angle menu and type every angle, separated by commas (for example: 11.25, 22.5, 45, 90, 172.8, 180, 360). If your camera lets you type any angle, choose “I can type any number” instead.',2);
     else{
-      if(junk.length&&junk.every(t=>/^\d+F$/i.test(t))) add('bad',`Your list has <b>${esc(junk.slice(0,4).join(', '))}${junk.length>4?'…':''}</b>. Those are the camera’s <b>slow-shutter frame counts</b> (64F = 64 frames), not shutter angles. In the camera’s shutter menu, switch the display to <b>Angle</b> (degrees), then type every angle it shows, separated by commas.`,2);
-      else if(junk.length) add('bad',`Your shutter angle list has something that isn’t an angle: <b>${esc(junk.join(', '))}</b>. Type only numbers, separated by commas (for example: 45, 90, 180, 360).`,2);
+      if(junk.length&&junk.every(t=>/^\d+F$/i.test(t))) add(nums.length>=3?'warn':'bad',`Your list has <b>${esc(junk.slice(0,4).join(', '))}${junk.length>4?'…':''}</b>. Those are the camera’s <b>slow-shutter frame counts</b> (64F = 64 frames), not shutter angles${nums.length>=3?', so they’re being ignored. You can delete them.':'. In the camera’s shutter menu, switch the display to <b>Angle</b> (degrees), then type every angle it shows, separated by commas.'}`,2);
+      else if(junk.length) add(nums.length>=3?'warn':'bad',`Your shutter angle list has something that isn’t an angle: <b>${esc(junk.join(', '))}</b>. ${nums.length>=3?'It’s being ignored; you can delete it.':'Type only numbers, separated by commas (for example: 45, 90, 180, 360).'}`,2);
       if(nums.length<3) add('bad',`Your shutter angle list only has <b>${nums.length}</b> angle${nums.length===1?'':'s'}. Type <b>every</b> angle in your camera’s menu, from the smallest to the largest.`,2);
       else if(nums[nums.length-1]<340) add('warn',`Your largest shutter angle is ${fmtAng(nums[nums.length-1])}. Most cameras go up to about 360°. Check the top of the menu.`,2);
     }
@@ -1521,7 +1522,7 @@ setInterval(()=>{ if(syncReady) pushChanges(); },5000);
 render(); startSync();
 /* When a new version is published, open pages reload themselves (work is already saved).
    Never mid-typing: waits until no box is being edited. */
-const BUILD='20260929-101728';
+const BUILD='20260929-102111';
 let updatePending=false;
 function maybeReload(){
   const a=document.activeElement, typing=a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT');
