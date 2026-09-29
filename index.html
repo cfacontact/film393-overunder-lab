@@ -330,6 +330,19 @@ function fresh(){
   };
 }
 let S;
+/* Work typed on the plain link (no ?group=) lives under the base key. On a group link we offer to bring it in. */
+const BASE_KEY='film393-overunder-lab-v1';
+let baseOffer=null;
+function findBaseWork(){
+  if(!GROUP) return;
+  try{
+    if(localStorage.getItem(KEY+'-base-handled')) return;
+    const raw=localStorage.getItem(BASE_KEY); if(!raw) return;
+    const b=JSON.parse(raw); const names=((b.group||{}).members||[]).map(m=>m&&m.name).filter(Boolean);
+    if(!(b.cam&&b.cam.name)&&!names.length&&b.N==null) return;
+    baseOffer={data:b,label:[b.group&&b.group.name?`group “${b.group.name}”`:'',names.length?names.join(', '):'',b.cam&&b.cam.name?`camera ${b.cam.name}`:''].filter(Boolean).join(' · ')};
+  }catch(e){}
+}
 function load(){
   try{ const raw=localStorage.getItem(KEY); if(raw){ S=merge(fresh(),JSON.parse(raw)); if(S.demo) S=fresh(); return; } }catch(e){}
   S=fresh();
@@ -1209,7 +1222,7 @@ function render(focusMain){
   document.getElementById('grpLabel').textContent=g;
   const m=document.getElementById('main');
   let body; try{ body=STEPS[S.step].f(); }catch(e){ console.error(e); body=`<div class="bad">Something went wrong on this step: ${esc(e.message)}</div>`; }
-  const banner='';
+  const banner=baseOffer?`<div class="warn noprint" style="margin-top:0"><b>This laptop has earlier work saved from the main link</b> (${esc(baseOffer.label)}). If it’s your group’s work, bring it in. It’s <b>added</b> to your group’s work without replacing anything anyone already typed.<div class="row" style="margin-top:10px"><button class="btn primary small" data-act="importBase">Yes, bring it in</button><button class="btn small" data-act="skipBase">No, it’s not ours</button></div></div>`:'';
   m.innerHTML=banner+body+`<div class="pager noprint">${S.step>0?`<button class="btn" data-act="go" data-arg="${S.step-1}">← ${esc(STEPS[S.step-1].t)}</button>`:'<span></span>'}${S.step<STEPS.length-1?`<button class="btn primary" data-act="go" data-arg="${S.step+1}">${esc(STEPS[S.step+1].t)} →</button>`:''}</div>`;
   m.querySelectorAll('select').forEach(s=>s.classList.toggle('empty',s.value===''));
   if(focusMain){ window.scrollTo(0,0); m.focus({preventScroll:true}); }
@@ -1272,6 +1285,18 @@ const ACTS={
   resetLadder:()=>{S.edits={};save();render();},
   clearLadder:()=>{if(confirm('Undo every change you typed, and go back to the calculated ladder?')){S.rows={};save();render();}},
   resetStart:()=>{S.start={};save();render();},
+  importBase:async()=>{
+    if(!baseOffer) return; const d={}; for(const k in baseOffer.data) if(!LOCAL_ONLY.includes(k)) d[k]=baseOffer.data[k];
+    try{
+      if(syncReady){
+        const r=await fetch(`${SYNC_URL}/room/${ROOM}/join`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:d,client:CLIENT})});
+        if(!r.ok) throw new Error('join'); const j=await r.json(); syncV=j.v; synced=clone(j.data||{}); adoptShared(j.data||{});
+      }else{ const cur=shareable(); adoptShared(unionLists(fillMerge(cur,d),cur,d)); }
+      localStorage.setItem(KEY+'-base-handled','imported '+new Date().toISOString());
+      baseOffer=null; save(); render(); alert('Done: the earlier work was added to your group.');
+    }catch(e){ alert('Couldn’t connect just now. Try again in a moment.'); }
+  },
+  skipBase:()=>{ try{ localStorage.setItem(KEY+'-base-handled','skipped'); }catch(e){} baseOffer=null; render(); },
   pickImg:()=>document.getElementById('fileImg').click(),
   rmImg:()=>{if(confirm('Remove the photo? Your readings stay.')){S.map.img=null;S.ui.adding=false;save();render();}},
   toggleAdd:()=>{S.ui.adding=!S.ui.adding;render();},
@@ -1313,7 +1338,7 @@ document.getElementById('fileImg').addEventListener('change',e=>{
   rd.onload=()=>{ const im=new Image(); im.onload=()=>{ const max=1400, sc=Math.min(1,max/Math.max(im.width,im.height)); const cv=document.createElement('canvas'); cv.width=Math.round(im.width*sc); cv.height=Math.round(im.height*sc); cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height); S.map.img=cv.toDataURL('image/jpeg',0.8); S.ui.adding=true; save(); render(); }; im.onerror=()=>alert('That image couldn’t be opened. Try a JPG or PNG.'); im.src=rd.result; };
   rd.readAsDataURL(f); e.target.value='';
 });
-load();
+load(); findBaseWork();
 /* ============================================================
    LIVE SYNC BETWEEN LAPTOPS (per group link, e.g. ?group=3)
    Safety rules, because groups were already working before sync existed:
@@ -1433,7 +1458,7 @@ setInterval(()=>{ if(syncReady) pushChanges(); },5000);
 render(); startSync();
 /* When a new version is published, open pages reload themselves (work is already saved).
    Never mid-typing: waits until no box is being edited. */
-const BUILD='20260929-095917';
+const BUILD='20260929-100207';
 let updatePending=false;
 function maybeReload(){
   const a=document.activeElement, typing=a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT');
