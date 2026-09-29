@@ -1222,7 +1222,9 @@ function render(focusMain){
   document.getElementById('grpLabel').textContent=g;
   const m=document.getElementById('main');
   let body; try{ body=STEPS[S.step].f(); }catch(e){ console.error(e); body=`<div class="bad">Something went wrong on this step: ${esc(e.message)}</div>`; }
-  const banner=baseOffer?`<div class="warn noprint" style="margin-top:0"><b>This laptop has earlier work saved from the main link</b> (${esc(baseOffer.label)}). If it’s your group’s work, bring it in. It’s <b>added</b> to your group’s work without replacing anything anyone already typed.<div class="row" style="margin-top:10px"><button class="btn primary small" data-act="importBase">Yes, bring it in</button><button class="btn small" data-act="skipBase">No, it’s not ours</button></div></div>`:'';
+  const guessN=(String(S.group.name||'').match(/\d+/)||[])[0];
+  const picker=!GROUP?`<div class="warn noprint" style="margin-top:0;border-left-color:var(--blue);background:var(--blue-soft)"><b>Which group are you?</b> Pick your number to share your work live with your group (on every laptop). Everything you’ve done on this laptop comes with you.<div class="row" style="margin-top:10px">${[1,2,3,4,5,6,7,8].map(n=>`<button class="btn small ${String(n)===guessN?'primary':''}" data-act="pickGroup" data-arg="${n}">Group ${n}</button>`).join('')}</div></div>`:'';
+  const banner=picker+(baseOffer?`<div class="warn noprint" style="margin-top:0"><b>This laptop has earlier work saved from the main link</b> (${esc(baseOffer.label)}). If it’s your group’s work, bring it in. It’s <b>added</b> to your group’s work without replacing anything anyone already typed.<div class="row" style="margin-top:10px"><button class="btn primary small" data-act="importBase">Yes, bring it in</button><button class="btn small" data-act="skipBase">No, it’s not ours</button></div></div>`:'');
   m.innerHTML=banner+body+`<div class="pager noprint">${S.step>0?`<button class="btn" data-act="go" data-arg="${S.step-1}">← ${esc(STEPS[S.step-1].t)}</button>`:'<span></span>'}${S.step<STEPS.length-1?`<button class="btn primary" data-act="go" data-arg="${S.step+1}">${esc(STEPS[S.step+1].t)} →</button>`:''}</div>`;
   m.querySelectorAll('select').forEach(s=>s.classList.toggle('empty',s.value===''));
   if(focusMain){ window.scrollTo(0,0); m.focus({preventScroll:true}); }
@@ -1295,6 +1297,15 @@ const ACTS={
       localStorage.setItem(KEY+'-base-handled','imported '+new Date().toISOString());
       baseOffer=null; save(); render(); alert('Done: the earlier work was added to your group.');
     }catch(e){ alert('Couldn’t connect just now. Try again in a moment.'); }
+  },
+  pickGroup:n=>{
+    const gk=BASE_KEY+'-g'+n;
+    try{
+      save();
+      if(!localStorage.getItem(gk)){ const d=clone(S); d.group.name=d.group.name||('Group '+n); localStorage.setItem(gk,JSON.stringify(d)); localStorage.setItem(gk+'-base-handled','moved '+new Date().toISOString()); }
+      else localStorage.setItem(gk+'-base-autoimport','1');
+    }catch(e){}
+    location.href=location.pathname+'?group='+n;
   },
   skipBase:()=>{ try{ localStorage.setItem(KEY+'-base-handled','skipped'); }catch(e){} baseOffer=null; render(); },
   pickImg:()=>document.getElementById('fileImg').click(),
@@ -1434,6 +1445,7 @@ async function startSync(){
     try{ if(!localStorage.getItem(KEY+'-before-sync')) localStorage.setItem(KEY+'-before-sync',JSON.stringify(S)); }catch(e){}
     await joinRoom();
     syncReady=true; scheduleSync(); openEvents();
+    try{ if(baseOffer&&localStorage.getItem(KEY+'-base-autoimport')){ localStorage.removeItem(KEY+'-base-autoimport'); const al=window.alert; window.alert=()=>{}; await ACTS.importBase(); window.alert=al; } }catch(e){}
   }catch(e){ setSyncState('offline'); setTimeout(startSync,8000); }
 }
 function openEvents(){
@@ -1458,7 +1470,7 @@ setInterval(()=>{ if(syncReady) pushChanges(); },5000);
 render(); startSync();
 /* When a new version is published, open pages reload themselves (work is already saved).
    Never mid-typing: waits until no box is being edited. */
-const BUILD='20260929-100207';
+const BUILD='20260929-100543';
 let updatePending=false;
 function maybeReload(){
   const a=document.activeElement, typing=a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT');
