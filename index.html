@@ -1214,6 +1214,56 @@ function stepPacket(){
 /* ============================================================
    RENDER + EVENTS
    ============================================================ */
+/* Things that are missing or wrong and will break the math, shown at the top of every page */
+function issues(){
+  const out=[], c=S.cam, add=(lvl,msg,step)=>out.push({lvl,msg,step});
+  const blank=v=>v==null||String(v).trim()==='';
+  if(blank(c.name)) add('bad','Type your <b>camera model</b>.',2);
+  if(blank(c.ei)||!(Number(c.ei)>0)) add('bad','Type your camera’s <b>native Exposure Index (ISO)</b>.',2);
+  if(blank(c.profiles)) add('bad','Type the <b>recording profile</b> you’re testing.',2);
+  if(c.shutterMode==='speed'){
+    if(!(Number(c.fastest)>0)) add('bad','Type your camera’s <b>fastest shutter speed</b>.',2);
+  }else if(c.angleMode==='any'){
+    if(!(Number(c.minA)>0)) add('bad','Type the <b>smallest shutter angle</b> your camera allows.',2);
+  }else{
+    const raw=String(c.angles||'').trim();
+    const toks=raw.split(/[,\s]+/).map(t=>t.trim()).filter(Boolean);
+    const junk=toks.filter(t=>!/^\d+(\.\d+)?°?$/.test(t));
+    const nums=angleList(c);
+    if(!raw) add('bad','<b>Fill in your shutter angle list.</b> Scroll through your camera’s shutter-angle menu and type every angle, separated by commas (for example: 11.25, 22.5, 45, 90, 172.8, 180, 360). If your camera lets you type any angle, choose “I can type any number” instead.',2);
+    else{
+      if(junk.length&&junk.every(t=>/^\d+F$/i.test(t))) add('bad',`Your list has <b>${esc(junk.slice(0,4).join(', '))}${junk.length>4?'…':''}</b>. Those are the camera’s <b>slow-shutter frame counts</b> (64F = 64 frames), not shutter angles. In the camera’s shutter menu, switch the display to <b>Angle</b> (degrees), then type every angle it shows, separated by commas.`,2);
+      else if(junk.length) add('bad',`Your shutter angle list has something that isn’t an angle: <b>${esc(junk.join(', '))}</b>. Type only numbers, separated by commas (for example: 45, 90, 180, 360).`,2);
+      if(nums.length<3) add('bad',`Your shutter angle list only has <b>${nums.length}</b> angle${nums.length===1?'':'s'}. Type <b>every</b> angle in your camera’s menu, from the smallest to the largest.`,2);
+      else if(nums[nums.length-1]<340) add('warn',`Your largest shutter angle is ${fmtAng(nums[nums.length-1])}. Most cameras go up to about 360°. Check the top of the menu.`,2);
+    }
+  }
+  const F0=Number(c.fps)||24;
+  if(!(Number(c.minF)>0)||!(Number(c.maxF)>0)) add('bad','Fill in your camera’s <b>lowest and highest frame rates</b>.',2);
+  else if(Number(c.minF)>F0||Number(c.maxF)<F0) add('warn',`Your frame-rate range (${c.minF}–${c.maxF}) doesn’t include your normal ${F0} frames per second. Check those two numbers.`,2);
+  if(tToS(c.wide)==null||tToS(c.deep)==null) add('bad','Fill in your lens’s <b>widest and deepest T-stop</b>.',2);
+  if(blank(c.doubles)) add('bad','Count your <b>double scrims</b> (red rim).',2);
+  else if(Number(c.doubles)===0) add('warn','You listed <b>0 double scrims</b>. The brightest and darkest takes need them. Get a scrim bag for your key light.',2);
+  if(!blank(c.singles)&&Number(c.singles)===0) add('warn','You listed <b>0 single scrims</b> (green rim). Without one, some half-stop takes may have to move the lens.',2);
+  if(blank(c.headroom)) add('bad','Measure your <b>extra light available</b> (the “How do I measure this?” link shows how).',2);
+  if(S.N==null){ add('bad','Choose <b>N</b>, your normal shooting stop.',3); return out; }
+  const L=ladder(); if(!L||!L.base.ready) return out;
+  const p=L.p, b=L.base, light=log2(180/b.A0)+b.D0+0.5*b.G0;
+  if(light>p.headroom+EPS) add('bad',`Your starting settings need <b>${fmtStops(light,false)} stops</b> of extra light but you only have ${fmtStops(p.headroom,false)}. Choose a larger starting angle or bring a bigger light.`,4);
+  const failing=L.rows.filter(r=>!r.isN&&!(r.complete&&r.match&&!r.problems.length));
+  if(failing.length) add('bad',`<b>${failing.length} take${failing.length>1?'s don’t':' doesn’t'} check out</b> on the ladder (${failing.map(r=>fmtO(r.o)).join(', ')}).`,5);
+  const lens=L.rows.filter(r=>r.irisMoved).length;
+  if(lens) add('warn',`<b>${lens} take${lens>1?'s move':' moves'} the lens.</b> Fix your shutter-angle list or scrim count if you can.`,5);
+  if(blank(S.setup.key)&&S.step>=4) add('warn','On test day: spot-meter the grey card and type the reading on step 4.',4);
+  return out;
+}
+function issuesBox(){
+  if(S.step<2&&!String(S.cam.name||'').trim()) return '';
+  const list=issues(); if(!list.length) return '';
+  const bad=list.filter(i=>i.lvl==='bad').length;
+  return `<div class="${bad?'bad':'warn'} noprint" style="margin-top:0"><b>${bad?'⚠︎ Needs attention before the math can work':'Check these'}</b> (${list.length})
+    <ul style="margin:8px 0 0;padding-left:20px">${list.map(i=>`<li style="margin:6px 0">${i.lvl==='bad'?'':'<span class="pill warn">check</span> '}${i.msg} <button class="btn small" data-act="go" data-arg="${i.step}">Fix on step ${i.step}</button></li>`).join('')}</ul></div>`;
+}
 function render(focusMain){
   S.step=Math.max(0,Math.min(STEPS.length-1,S.step|0));
   document.getElementById('nav').innerHTML=STEPS.map((s,i)=>{let d=false;try{d=s.done();}catch(e){}
@@ -1225,7 +1275,8 @@ function render(focusMain){
   const guessN=(String(S.group.name||'').match(/\d+/)||[])[0];
   const picker=!GROUP?`<div class="warn noprint" style="margin-top:0;border-left-color:var(--blue);background:var(--blue-soft)"><b>Which group are you?</b> Pick your number to share your work live with your group (on every laptop). Everything you’ve done on this laptop comes with you.<div class="row" style="margin-top:10px">${[1,2,3,4,5,6,7,8].map(n=>`<button class="btn small ${String(n)===guessN?'primary':''}" data-act="pickGroup" data-arg="${n}">Group ${n}</button>`).join('')}</div></div>`:'';
   const banner=picker+(baseOffer?`<div class="warn noprint" style="margin-top:0"><b>This laptop has earlier work saved from the main link</b> (${esc(baseOffer.label)}). If it’s your group’s work, bring it in. It’s <b>added</b> to your group’s work without replacing anything anyone already typed.<div class="row" style="margin-top:10px"><button class="btn primary small" data-act="importBase">Yes, bring it in</button><button class="btn small" data-act="skipBase">No, it’s not ours</button></div></div>`:'');
-  m.innerHTML=banner+body+`<div class="pager noprint">${S.step>0?`<button class="btn" data-act="go" data-arg="${S.step-1}">← ${esc(STEPS[S.step-1].t)}</button>`:'<span></span>'}${S.step<STEPS.length-1?`<button class="btn primary" data-act="go" data-arg="${S.step+1}">${esc(STEPS[S.step+1].t)} →</button>`:''}</div>`;
+  let ib=''; try{ ib=issuesBox(); }catch(e){}
+  m.innerHTML=banner+ib+body+`<div class="pager noprint">${S.step>0?`<button class="btn" data-act="go" data-arg="${S.step-1}">← ${esc(STEPS[S.step-1].t)}</button>`:'<span></span>'}${S.step<STEPS.length-1?`<button class="btn primary" data-act="go" data-arg="${S.step+1}">${esc(STEPS[S.step+1].t)} →</button>`:''}</div>`;
   m.querySelectorAll('select').forEach(s=>s.classList.toggle('empty',s.value===''));
   if(focusMain){ window.scrollTo(0,0); m.focus({preventScroll:true}); }
 }
@@ -1470,7 +1521,7 @@ setInterval(()=>{ if(syncReady) pushChanges(); },5000);
 render(); startSync();
 /* When a new version is published, open pages reload themselves (work is already saved).
    Never mid-typing: waits until no box is being edited. */
-const BUILD='20260929-100543';
+const BUILD='20260929-101728';
 let updatePending=false;
 function maybeReload(){
   const a=document.activeElement, typing=a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT');
