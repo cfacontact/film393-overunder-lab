@@ -384,34 +384,45 @@ function P(){
 }
 /* One take. Order of tools, per class rules: shutter angle → scrims → frame rate → lens (last resort).
    Half-stops: shutter angle if the camera has that exact angle → single scrim → lens split (last resort). */
+/* Camera angles the math may use: every angle on the group's list, or (if the camera takes any angle)
+   half-stop steps. Angles within ~3% count as their exact value (e.g. 356° ≈ 360°); the check uses the real angle. */
+function angleCands(A0,p){
+  if(p.aList) return p.aList;
+  const out=[]; for(let k=-20;k<=20;k++){ const a=A0*Math.pow(2,k/2); if(a>=p.minA-EPS&&a<=p.maxA+EPS) out.push(a); }
+  if(!out.some(a=>Math.abs(a-p.maxA)<EPS)) out.push(p.maxA);
+  return out;
+}
+function pKey(p){ return [p.speed,p.F0,p.aList&&p.aList.join(','),p.minA,p.maxA,p.minF,p.maxF,p.Dmax,p.Gmax,p.sWide,p.sDeep,p.sN,p.fastest,p.headroom].join('|'); }
+const MEMO=new Map();
+function memo(k,f){ if(MEMO.has(k)) return MEMO.get(k); if(MEMO.size>20000) MEMO.clear(); const v=f(); MEMO.set(k,v); return v; }
+/* One take: search every angle on the list × frame rate × scrims for the closest fit.
+   Preference: shutter angle, then scrims, then frame rate; the lens only if nothing else works. */
 function solveRung(o,A0,D0,G0,p){
-  let s=p.sN,k=0,F=p.F0,D=D0,G=G0,ok=true;
-  const aOK=(kk,FF=F)=>{const a=A0*Math.pow(2,kk);
-    if(a<p.minA-EPS||a>p.maxA+EPS||a/360/FF<1/p.fastest-1e-12) return false;
-    if(p.aList&&!p.aList.some(x=>Math.abs(x-a)/a<0.006)) return false;
-    return true;};
-  const whole=Math.trunc(o), half=o-whole;
-  if(Math.abs(half)>EPS){
-    const h=Math.sign(half)*0.5; let done=false;
-    if(aOK(k+h)){k+=h;done=true;}
-    if(!done&&h>0&&G>0){G--;done=true;}
-    if(!done&&h<0&&G<p.Gmax){G++;done=true;}
-    if(!done&&h<0&&G>0&&D<p.Dmax){D++;G--;done=true;}   /* swap single → double = −½ */
-    if(!done&&h>0&&D>0&&G<p.Gmax){D--;G++;done=true;}   /* swap double → single = +½ */
-    if(!done&&s-h>=p.sWide-EPS&&s-h<=p.sDeep+EPS){s-=h;done=true;}
-    if(!done) ok=false;
-  }
-  let r=whole;
-  while(r>0&&aOK(k+1)){k++;r--;}
-  while(r>0&&D>0){D--;r--;}
-  while(r>0&&F/2>=p.minF-EPS){F/=2;r--;}
-  while(r>0&&s-1>=p.sWide-EPS){s-=1;r--;}
-  while(r<0&&aOK(k-1)){k--;r++;}
-  while(r<0&&D<p.Dmax){D++;r++;}
-  while(r<0&&F*2<=p.maxF+EPS&&aOK(k,F*2)){F*=2;r++;}
-  while(r<0&&s+1<=p.sDeep+EPS){s+=1;r++;}
-  if(r!==0) ok=false;
-  return {o,s,angle:A0*Math.pow(2,k),F,D,G,ok};
+  return memo('r|'+pKey(p)+'|'+[o,A0,D0,G0].join('|'),()=>{
+    if(Math.abs(o)<EPS) return {o,s:p.sN,angle:A0,F:p.F0,D:D0,G:G0,ok:true};
+    const TOL=0.06, angles=angleCands(A0,p);
+    const Fs=[]; for(let j=-4;j<=3;j++){ const F=p.F0*Math.pow(2,j); if(F>=p.minF-EPS&&F<=p.maxF+EPS) Fs.push(F); }
+    let best=null;
+    const tryIris=allow=>{
+      const irisSteps=allow?[-4,-3.5,-3,-2.5,-2,-1.5,-1,-0.5,0.5,1,1.5,2,2.5,3,3.5,4]:[0];
+      for(const dI of irisSteps){ const s=p.sN-dI; if(s<p.sWide-EPS||s>p.sDeep+EPS) continue;
+        for(const a of angles) for(const F of Fs){
+          if(a/360/F<1/p.fastest-1e-12) continue;
+          const base=log2(a/A0)+log2(p.F0/F)+dI;
+          for(let D=0;D<=p.Dmax;D++){
+            const restHalf=(o-base-(D0-D))*2;           // what singles must supply, in half-stops
+            const x=Math.round(restHalf), G=G0-x;
+            if(G<0||G>p.Gmax) continue;
+            const err=Math.abs(restHalf-x)/2; if(err>TOL) continue;
+            const cost=err*30+3*Math.abs(log2(F/p.F0))+20*Math.abs(dI)+0.5*Math.abs(D-D0)+0.4*Math.abs(G-G0)+0.01*Math.abs(log2(a/A0));
+            if(!best||cost<best.cost) best={o,s,angle:a,F,D,G,ok:true,cost};
+          }
+        }
+      }
+    };
+    tryIris(false); if(!best) tryIris(true);
+    return best||{o,s:p.sN,angle:A0,F:p.F0,D:D0,G:G0,ok:false};
+  });
 }
 function ladderCost(A0,D0,G0,p){
   let cost=0; const rows=RUNGS.map(o=>solveRung(o,A0,D0,G0,p));
@@ -429,7 +440,8 @@ function baseCandidates(p){
   if(p.aList) return p.aList.slice().reverse();
   return [360,180,90,45,22.5,11.25,5.625].filter(a=>a>=p.minA-EPS&&a<=p.maxA+EPS);
 }
-function autoBase(p){
+function autoBase(p){ return memo('ab|'+pKey(p),()=>autoBase_(p)); }
+function autoBase_(p){
   let best=null;
   const cands=[];
   for(const A0 of baseCandidates(p)) for(let D0=0;D0<=p.Dmax;D0++) for(let G0=0;G0<=Math.min(1,p.Gmax);G0++) cands.push({A0,D0,G0,light:log2(180/A0)+D0+0.5*G0});
@@ -452,7 +464,8 @@ function getBase(p){
    ============================================================ */
 const numOrNull=v=>(v===''||v==null||isNaN(Number(v)))?null:Number(v);
 /* Best scrims for a chosen starting angle, by the same math as autoBase */
-function bestScrims(A0,p){
+function bestScrims(A0,p){ return memo('bs|'+pKey(p)+'|'+A0,()=>bestScrims_(A0,p)); }
+function bestScrims_(A0,p){
   let best=null; const cands=[];
   for(let D0=0;D0<=p.Dmax;D0++) for(let G0=0;G0<=Math.min(1,p.Gmax);G0++) cands.push({D0,G0,light:log2(180/A0)+D0+0.5*G0});
   let pool=cands.filter(c=>c.light<=p.headroom+EPS); if(!pool.length){const m=Math.min(...cands.map(c=>c.light));pool=cands.filter(c=>c.light<=m+EPS);}
@@ -471,11 +484,14 @@ function startVals(p){
   return {A0,D0,G0,ready:!!A0,auto:{A:autoA,D:tD==null,G:tG==null},calc:{D0:bs.D0,G0:bs.G0}};
 }
 /* Angles in the 1-stop doubling chain up to the camera's max (the sensible starting choices) */
+/* Starting-angle choices: every angle on the group's list (or the 1-stop chain if the camera takes any angle) */
 function chainAngles(p){
-  const out=[]; for(let a=p.maxA;a>=p.minA-EPS&&out.length<9;a/=2){ if(!p.aList||p.aList.some(x=>Math.abs(x-a)/a<0.006)) out.push(Math.round(a*1000)/1000); else break; }
+  if(p.aList) return p.aList.slice().reverse();
+  const out=[]; for(let a=p.maxA;a>=p.minA-EPS&&out.length<9;a/=2) out.push(Math.round(a*1000)/1000);
   return out;
 }
-function halvingsBelow(A0,p){ let k=0,a=A0/2; while(a>=p.minA-EPS&&(!p.aList||p.aList.some(x=>Math.abs(x-a)/a<0.006))){k++;a/=2;} return k; }
+/* stops the shutter can close from A0 down to the smallest angle available */
+function halvingsBelow(A0,p){ return Math.max(0,log2(A0/p.minA)); }
 function ladder(){
   const p=P(); if(p.sN==null) return null;
   const b=startVals(p);
@@ -501,7 +517,7 @@ function ladder(){
       r.incident=p.sN+lightStops;
       r.scrimChange=r.D!==b.D0||r.G!==b.G0;
       if(r.t>1/r.F+1e-9) r.problems.push('Impossible: the shutter can’t stay open longer than one whole frame (360°).');
-      if(!p.speed&&p.aList&&!p.aList.some(x=>Math.abs(x-r.angle)/r.angle<0.006)) r.problems.push(fmtAng(r.angle)+' isn’t on your camera’s shutter-angle list (step 2).');
+      if(!p.speed&&p.aList&&!p.aList.some(x=>Math.abs(x-r.angle)/r.angle<0.03)) r.problems.push(fmtAng(r.angle)+' isn’t on your camera’s shutter-angle list (step 2).');
       if(!p.speed&&!p.aList&&(r.angle<p.minA-EPS||r.angle>p.maxA+EPS)) r.problems.push('Your camera’s shutter angle only goes from '+fmtAng(p.minA)+' to '+fmtAng(p.maxA)+'.');
       if(p.speed&&r.den>p.fastest*1.02) r.problems.push('Faster than your camera’s fastest shutter speed (1/'+p.fastest+').');
       if(r.F<p.minF-EPS||r.F>p.maxF+EPS) r.problems.push('Your camera’s frame rate only goes from '+fmtFps(p.minF)+' to '+fmtFps(p.maxF)+' frames per second.');
@@ -560,7 +576,7 @@ function stepMeter(){
       <li><div><b>Room to go brighter with the shutter:</b> from ${fmtAng(b.A0)} up to ${fmtAng(p.maxA)} is <b>${fmtStops(k1,false)} stop${pl(k1)}</b> (each doubling is +1).</div></li>
       <li><div><b>Still needed for N+5:</b> 5 − ${fmtStops(k1,false)} = <b>${fmtStops(need,false)} stop${pl(need)}</b>.</div></li>
       <li><div><b>Scrims you can pull out:</b> ${b.D0} double${b.D0===1?'':'s'} (1 stop each)${p.Gmax?` + ${b.G0} single${b.G0===1?'':'s'} (½ stop each)`:''} = <b>${fmtStops(pull,false)} stop${pl(pull)}</b>.${upFps>EPS?` The last <b>${fmtStops(upFps,false)}</b> will come from lowering the frame rate.`:' That’s enough: the brighter takes don’t need a frame-rate change.'}</div></li>
-      <li><div><b>Room to go darker:</b> the shutter can close <b>${k3}</b> stop${k3===1?'':'s'} (using angles on your list), and you have <b>${left}</b> more double${left===1?'':'s'} to add, for <b>${k3+left}</b> stop${k3+left===1?'':'s'}.${k3+left>=5?' That reaches N−5.':` The last ${5-k3-left} will come from raising the frame rate.`}</div></li>
+      <li><div><b>Room to go darker:</b> the shutter can close <b>${fmtStops(k3,false)}</b> stop${pl(k3)} (down to ${fmtAng(p.minA)}, the smallest angle on your list), and you have <b>${left}</b> more double${left===1?'':'s'} to add, for about <b>${fmtStops(k3+left,false)}</b> stop${pl(k3+left)}.${k3+left>=5-0.06?' That reaches N−5.':` The last ${fmtStops(5-k3-left,false)} will come from raising the frame rate.`}</div></li>
       <li><div><b>Extra light needed:</b> starting at ${fmtAng(b.A0)} instead of 180° costs ${fmtStops(log2(180/b.A0),false)} stop${pl(log2(180/b.A0))}, plus ${fmtStops(pull,false)} for the scrims, for a total of <b>${fmtStops(lightNeed,false)} stop${pl(lightNeed)}</b> (${Math.round(Math.pow(2,lightNeed)*10)/10}× the light of a normal 180° setup with no scrims).
         ${lightNeed>p.headroom+EPS?`<div class="bad" style="margin:8px 0 0">That’s more than the ${fmtStops(p.headroom,false)} stops of extra light you measured on step 2. Choose a larger starting angle, or bring a bigger light.</div>`:`<div class="good" style="margin:8px 0 0">You measured ${fmtStops(p.headroom,false)} stops of extra light on step 2, so this works.</div>`}</div></li>
     </ol>
@@ -1417,7 +1433,7 @@ setInterval(()=>{ if(syncReady) pushChanges(); },5000);
 render(); startSync();
 /* When a new version is published, open pages reload themselves (work is already saved).
    Never mid-typing: waits until no box is being edited. */
-const BUILD='20260929-094553';
+const BUILD='20260929-095917';
 let updatePending=false;
 function maybeReload(){
   const a=document.activeElement, typing=a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT');
