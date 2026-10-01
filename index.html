@@ -298,6 +298,13 @@ function parseReading(str){
     if(!m) return null;
     base=parseFloat(m[1]); frac=Number(m[2])/10;
   }
+  /* "2.85" isn't a T-stop: it's the Speedmaster's 2.8 with a small 5 (tenths) typed as one number */
+  if(!frac&&m&&!m[2]){
+    const txt=m[1], dec=(txt.split('.')[1]||'');
+    const isFull=v=>FULL.some(f=>Math.abs(f-v)/v<0.012), isNamed=v=>FULL.concat(THIRDS).some(f=>Math.abs(f-v)/v<0.012);
+    if(dec.length===2){ const pre=parseFloat(txt.slice(0,-1)); if(isFull(pre)){ base=pre; frac=Number(txt.slice(-1))/10; } }
+    else if(dec.length===1&&!isNamed(base)){ const ip=parseFloat(txt.split('.')[0]); if(isFull(ip)){ base=ip; frac=Number(dec)/10; } }
+  }
   const s=tToS(base); if(s==null) return null;
   return s+frac;
 }
@@ -321,7 +328,7 @@ function fresh(){
     base:{auto:true,A0:180,D0:0,G0:0},
     start:{}, rows:{},
     edits:{},
-    setup:{key:'',fill:'',bg:'',hair:'',dist:'',fixture:'',notes:''},
+    setup:{grey:'',key:'',fill:'',bg:'',hair:'',dist:'',fixture:'',notes:''},
     checklist:{},
     map:{img:null,markers:[],rung:0,clip:'',floor:''},
     takes:{}, analysis:{}, profileCmp:{},
@@ -639,6 +646,7 @@ function stepMeter(){
   <h3>Record spot readings around the frame</h3>
   <p>Spot-meter each of these from beside the camera, with the meter still on the settings above. Type them the way the Speedmaster shows them, for example <span class="mono">2.8</span>, <span class="mono">4 1/3</span>, or <span class="mono">2.8 7</span> (the meter’s small number means tenths, so that’s 2.8 plus 7/10 of a stop).</p>
   <div class="grid2">
+    ${field('<b>Grey card</b> (spot reading: must read exactly N)',inp('setup.grey',{ph:'Example: '+fmtT(p.sN).slice(1),r:true}),(()=>{const v=rd('grey');if(v==null) return 'Spot-meter the grey card after locking the light and type what the meter says.';const d=v-p.sN;return Math.abs(d)<=0.17?'<span class="pill ok">✓ matches N</span>':`<span class="pill bad">✗ ${fmtStops(Math.abs(d),false)} stop${Math.abs(d)>1+EPS?'s':''} too ${d>0?'bright':'dark'}</span> Move the light ${d>0?'farther away or spread its beam':'closer or focus its beam'} until the grey card reads ${fmtT(p.sN)}.`;})())}
     ${[['key','Skin on the key side of the face'],['fill','Skin on the fill side of the face'],['bg','Background'],['hair','Hair / separation light (on the hair)']].map(([k,l])=>field(l,inp('setup.'+k,{ph:'Example: 2.8',r:true}),(()=>{const v=rd(k);if(v==null) return '';const d=v-p.sN;return Math.abs(d)<0.08?'= <b>N</b>: exactly your normal exposure.':`= <b>${fmtO(d)}</b>: ${fmtStops(Math.abs(d),false)} stop${Math.abs(d)>1+EPS?'s':''} ${d>0?'brighter':'darker'} than N (${mult(d)}).`;})())).join('')}
     ${field('Distance from light to actor',inp('setup.dist',{ph:'Example: 9 feet 4 inches'}))}
     ${field('Light used',inp('setup.fixture',{ph:'Example: Arri 2K Fresnel, beam 3/4 focused'}))}
@@ -795,7 +803,7 @@ const STEPS=[
   {t:'Think like a scientist',f:stepExperiment,done:()=>Object.keys(QUIZ).every(k=>S.quiz[k]===QUIZ[k].a)},
   {t:'Camera, lens & light',f:stepCamera,done:()=>!!S.cam.name&&!!S.cam.ei&&!!S.cam.profiles},
   {t:'Choose N (normal stop)',f:stepN,done:()=>S.N!=null},
-  {t:'Starting settings & light to N',f:stepMeter,done:()=>{const p=P();return p.sN!=null&&startVals(p).ready&&!!S.setup.key;}},
+  {t:'Starting settings & light to N',f:stepMeter,done:()=>{const p=P();return p.sN!=null&&startVals(p).ready&&(!!S.setup.grey||!!S.setup.key);}},
   {t:'Build the exposure ladder',f:stepLadder,done:()=>{const L=ladder();return !!L&&L.base.ready&&L.rows.every(r=>r.isN||(r.complete&&r.match&&!r.problems.length));}},
   {t:'Map your frame',f:stepMap,done:()=>S.map.markers.some(m=>parseReading(m.reading)!=null)},
   {t:'Shoot the ladder',f:stepShoot,done:()=>profiles().some((_,i)=>RUNGS.every(o=>S.takes['p'+i]?.[rk(o)]?.shot))},
@@ -1199,7 +1207,7 @@ function stepPacket(){
     <div class="tbl-wrap"><table><thead><tr><th>Take</th><th>T-stop</th><th>Shutter</th><th>Frame rate</th><th>Scrims (double + single)</th><th>Record for</th><th>Math check</th><th>Meter says</th></tr></thead><tbody>
     ${rows.map(r=>`<tr class="${Math.abs(r.o)<EPS?'isN':''}"><td class="rung">${fmtO(r.o)}</td><td class="mono">${esc(irisLabel(r.s,p.sN))}</td><td class="mono">${r.complete?(p.speed?fmtDen(r.den):fmtAng(r.angle)):'—'}</td><td class="mono">${fmtFps(r.F)}</td><td class="mono">${r.D??'—'} + ${r.G??'—'}</td><td class="mono">${r.rec} sec</td><td>${!r.complete?'not filled in':(r.match&&!r.problems.length?'✓':'✗')}</td><td class="mono">${r.complete?fmtT(r.meterRec):'—'}</td></tr>`).join('')}
     </tbody></table></div>
-    <p class="mono hint">Spot readings · key ${esc(S.setup.key||'—')} · fill ${esc(S.setup.fill||'—')} · background ${esc(S.setup.bg||'—')} · hair ${esc(S.setup.hair||'—')} · distance ${esc(S.setup.dist||'—')} · ${esc(S.setup.fixture||'')}</p>`;
+    <p class="mono hint">Spot readings · grey card ${esc(S.setup.grey||'—')} · key ${esc(S.setup.key||'—')} · fill ${esc(S.setup.fill||'—')} · background ${esc(S.setup.bg||'—')} · hair ${esc(S.setup.hair||'—')} · distance ${esc(S.setup.dist||'—')} · ${esc(S.setup.fixture||'')}</p>`;
     const mk=S.map.markers.map(m=>({...m,s:parseReading(m.reading)})).filter(m=>m.s!=null);
     if(mk.length) html+=`<p class="hint">Frame map: ${mk.map(m=>`${esc(m.label)} ${fmtT(m.s)} (${fmtO(m.s-p.sN)})`).join(' · ')}</p>`;
   }
@@ -1255,7 +1263,9 @@ function issues(){
   if(failing.length) add('bad',`<b>${failing.length} take${failing.length>1?'s don’t':' doesn’t'} check out</b> on the ladder (${failing.map(r=>fmtO(r.o)).join(', ')}).`,5);
   const lens=L.rows.filter(r=>r.irisMoved).length;
   if(lens) add('warn',`<b>${lens} take${lens>1?'s move':' moves'} the lens.</b> Fix your shutter-angle list or scrim count if you can.`,5);
-  if(blank(S.setup.key)&&S.step>=4) add('warn','On test day: spot-meter the grey card and type the reading on step 4.',4);
+  const gc=parseReading(S.setup.grey);
+  if(gc==null&&S.step>=4) add('warn','On test day: spot-meter the grey card and type the reading on step 4.',4);
+  else if(gc!=null&&Math.abs(gc-p.sN)>0.17) add('bad',`Your grey card reads <b>${esc(S.setup.grey)}</b> but N is <b>${fmtT(p.sN)}</b>. Move the light until the grey card reads exactly N, then lock it.`,4);
   return out;
 }
 function issuesBox(){
@@ -1522,7 +1532,7 @@ setInterval(()=>{ if(syncReady) pushChanges(); },5000);
 render(); startSync();
 /* When a new version is published, open pages reload themselves (work is already saved).
    Never mid-typing: waits until no box is being edited. */
-const BUILD='20260929-102111';
+const BUILD='20261001-100231';
 let updatePending=false;
 function maybeReload(){
   const a=document.activeElement, typing=a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT');
