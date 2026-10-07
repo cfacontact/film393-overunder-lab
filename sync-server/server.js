@@ -153,7 +153,14 @@ http.createServer(async (req, res) => {
     return json(res, 400, { error: e.message });
   }
   json(res, 405, { error: 'method not allowed' });
-}).listen(PORT, () => console.log('film393 sync listening on', PORT, 'data', DATA_DIR));
+}).listen(PORT, () => console.log('film393 sync listening on', PORT, 'data', DATA_DIR))
+  // Can't serve at all (port taken): exit so Railway restarts it, rather than the handlers below keeping it alive.
+  .on('error', e => { console.error('server error', e.message); process.exit(1); });
+
+// Any other stray error would otherwise kill the process: every group's live connection drops, edits still on the
+// 800ms save timer are lost, and Railway emails "Deployment crashed". Log it and keep serving, as the CFA bots do.
+process.on('uncaughtException', e => console.error('uncaughtException:', e && e.stack || e));
+process.on('unhandledRejection', e => console.error('unhandledRejection:', e && e.stack || e));
 
 // A deploy stops the old container with SIGTERM. Without a handler node died by the signal, npm exited non-zero, and
 // Railway (volume = no overlap) emailed "Deployment crashed" (9/29). It also dropped any edit still on persist()'s
