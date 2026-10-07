@@ -154,3 +154,23 @@ http.createServer(async (req, res) => {
   }
   json(res, 405, { error: 'method not allowed' });
 }).listen(PORT, () => console.log('film393 sync listening on', PORT, 'data', DATA_DIR));
+
+// A deploy stops the old container with SIGTERM. Without a handler node died by the signal, npm exited non-zero, and
+// Railway (volume = no overlap) emailed "Deployment crashed" (9/29). It also dropped any edit still on persist()'s
+// 800ms timer. Write those now, synchronously, close the SSE streams (clients rejoin the new container), exit 0.
+process.on('SIGTERM', () => {
+  let saved = 0;
+  for (const [id, r] of rooms) {
+    if (!r.saveT) continue;
+    clearTimeout(r.saveT);
+    const f = path.join(DATA_DIR, id + '.json');
+    try {
+      fs.writeFileSync(f + '.tmp', JSON.stringify({ v: r.v, data: r.data, savedAt: new Date().toISOString() }));
+      fs.renameSync(f + '.tmp', f);
+      saved++;
+    } catch (e) { console.error('save on SIGTERM', id, e.message); }
+  }
+  for (const r of rooms.values()) for (const c of r.clients) { try { c.end(); } catch { /* already gone */ } }
+  console.log('SIGTERM: saved', saved, 'room(s); exiting');
+  process.exit(0);
+});
