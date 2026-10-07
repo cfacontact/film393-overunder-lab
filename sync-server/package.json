@@ -1,2 +1,2 @@
 { "name": "film393-sync", "version": "1.0.0", "private": true, "main": "server.js",
-  "scripts": { "start": "node server.js" }, "engines": { "node": ">=18" } }
+  "scripts": { "start": "exec node server.js" }, "engines": { "node": ">=18" } }
